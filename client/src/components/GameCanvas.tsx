@@ -17,9 +17,7 @@ export function GameCanvas() {
   return (
     <canvas
       ref={canvasRef}
-      width={800}
-      height={500}
-      style={{ display: 'block', border: '1px solid #333' }}
+      style={{ display: 'block', width: 800, height: 500, border: '1px solid #333' }}
     />
   );
 }
