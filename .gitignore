@@ -7,6 +7,7 @@ client/dist/
 
 # TypeScript build info
 *.tsbuildinfo
+.vite/
 
 # environment
 .env
