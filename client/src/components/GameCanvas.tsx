@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Game } from '../game/Game';
+import { NetworkClient } from '../network/NetworkClient';
 
 export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -8,10 +9,20 @@ export function GameCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const game = new Game(canvas);
+    const network = new NetworkClient();
+    const game = new Game(canvas, network);
+
+    network.connect(
+      (msg) => game.onServerMessage(msg),
+      () => console.log('disconnected from server'),
+    );
+
     game.start();
 
-    return () => game.destroy();
+    return () => {
+      game.destroy();
+      network.disconnect();
+    };
   }, []);
 
   return (

@@ -1,10 +1,12 @@
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
-import { WebSocketServer, WebSocket } from 'ws';
+import { WebSocketServer } from 'ws';
 import path from 'path';
+import { GameRoom } from './GameRoom';
 
 const app = Fastify({ logger: true });
+const room = new GameRoom();
 
 app.register(fastifyCors, { origin: true });
 
@@ -20,11 +22,18 @@ app.get('/api/ping', async () => ({ message: 'pong', timestamp: Date.now() }));
 const wss = new WebSocketServer({ server: app.server });
 
 wss.on('connection', (socket) => {
-  console.log('client connected, total:', wss.clients.size);
-  socket.send(JSON.stringify({ type: 'connected', playerCount: wss.clients.size }));
+  const playerId = room.addPlayer(socket);
+  console.log(`player connected: ${playerId} — total: ${wss.clients.size}`);
+
+  socket.on('message', (data) => {
+    try {
+      room.handleMessage(playerId, JSON.parse(data.toString()));
+    } catch {}
+  });
 
   socket.on('close', () => {
-    console.log('client disconnected, total:', wss.clients.size);
+    room.removePlayer(playerId);
+    console.log(`player disconnected: ${playerId} — total: ${wss.clients.size}`);
   });
 });
 
