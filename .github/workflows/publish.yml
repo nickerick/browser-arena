@@ -3,6 +3,11 @@ name: Build and Push to GHCR
 on:
   push:
     tags: ['v*']
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
 
 jobs:
   build-and-push:
@@ -29,7 +34,7 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=latest
-            type=semver,pattern={{raw}},value=${{ github.ref_name }}
+            type=raw,value=${{ inputs.version || github.ref_name }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
