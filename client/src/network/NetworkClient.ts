@@ -1,29 +1,36 @@
-const WS_URL = import.meta.env.DEV ? 'ws://localhost:3001' : `wss://${window.location.host}`;
+import type { ClientMessage, ServerMessage } from '@browser-arena/shared';
 
-type MessageHandler = (msg: unknown) => void;
+const WS_URL = import.meta.env.DEV
+  ? 'ws://localhost:3001'
+  : `wss://${window.location.host}`;
 
 export class NetworkClient {
   private socket: WebSocket | null = null;
+  playerId: string | null = null;
 
-  connect(onMessage: MessageHandler, onClose: () => void) {
+  connect(onMessage: (msg: ServerMessage) => void, onClose: () => void) {
     this.socket = new WebSocket(WS_URL);
-
-    this.socket.onopen = () => {
-      console.log('WebSocket connected');
-    };
 
     this.socket.onmessage = (e) => {
       try {
-        onMessage(JSON.parse(e.data));
+        const msg: ServerMessage = JSON.parse(e.data);
+        if (msg.type === 'init') this.playerId = msg.id;
+        onMessage(msg);
       } catch {
         console.warn('unparseable message:', e.data);
       }
     };
 
     this.socket.onclose = () => {
-      console.log('WebSocket disconnected');
+      this.playerId = null;
       onClose();
     };
+  }
+
+  send(msg: ClientMessage) {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(msg));
+    }
   }
 
   disconnect() {
