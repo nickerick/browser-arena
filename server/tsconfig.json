@@ -5,12 +5,11 @@
     "moduleResolution": "node16",
     "strict": true,
     "esModuleInterop": true,
-    "rootDir": "..",
     "outDir": "./dist",
     "skipLibCheck": true,
     "paths": {
       "@browser-arena/shared": ["../shared/src/index.ts"]
     }
   },
-  "include": ["src", "../shared/src"]
+  "include": ["src"]
 }

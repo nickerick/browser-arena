@@ -9,7 +9,7 @@ COPY shared/package*.json ./shared/
 RUN npm ci
 
 COPY . .
-# shared has no build step — it's compiled directly by client (vite alias) and server (tsc include)
+# tsup bundles @browser-arena/shared inline — no shared build step needed
 RUN npm run build -w client && npm run build -w server
 
 # Stage 2: Install production deps only (standalone, no workspace overhead)
@@ -22,11 +22,12 @@ RUN npm install --omit=dev
 FROM node:24-alpine
 WORKDIR /app
 
+# tsup outputs a single self-contained bundle at server/dist/index.js
 COPY --from=builder /app/server/dist ./server/dist
-# Server expects client assets at ../../client/dist relative to __dirname (server/dist/server/src)
-COPY --from=builder /app/client/dist ./server/dist/client/dist
+# __dirname in the bundle is /app/server/dist, so client assets go two levels up
+COPY --from=builder /app/client/dist ./client/dist
 COPY --from=prod-deps /app/server/node_modules ./server/node_modules
 
 EXPOSE 3001
 ENV NODE_ENV=production
-CMD ["node", "server/dist/server/src/index.js"]
+CMD ["node", "server/dist/index.js"]
