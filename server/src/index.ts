@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import path from 'path';
 import { healthHandlers } from './handlers/health';
 import { statsHandlers } from './handlers/stats';
@@ -9,6 +10,8 @@ import { registerGameGateway } from './game/gateway';
 const app = Fastify({ logger: true });
 
 // Plugins
+app.setValidatorCompiler(validatorCompiler);
+app.setSerializerCompiler(serializerCompiler);
 app.register(fastifyCors, { origin: true });
 
 // Serves client bundle in production build

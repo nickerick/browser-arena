@@ -1,6 +1,8 @@
 import type { ApiResponse, PlayerStats, GetStatsRequest } from '@browser-arena/shared';
 
-export async function fetchPlayerStats(body: GetStatsRequest = {}): Promise<ApiResponse<PlayerStats>> {
+export async function fetchPlayerStats(
+  body: GetStatsRequest = {}
+): Promise<ApiResponse<PlayerStats>> {
   const res = await fetch('/api/getStats', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

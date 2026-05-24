@@ -1,9 +1,10 @@
-import type { FastifyPluginAsync } from 'fastify';
-import type { ApiResponse, PlayerStats, GetStatsRequest } from '@browser-arena/shared';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { type PlayerStats, GetStatsRequestSchema } from '@browser-arena/shared';
 import { getPlayerStats } from '../store/playerStore';
+import { rpc } from '../lib/rpc';
 
-export const statsHandlers: FastifyPluginAsync = async (fastify) => {
-  fastify.post<{ Body: GetStatsRequest; Reply: ApiResponse<PlayerStats> }>('/getStats', async () => {
-    return { ok: true, data: getPlayerStats() };
+export const statsHandlers: FastifyPluginAsyncZod = async (fastify) => {
+  rpc(fastify, '/getStats', GetStatsRequestSchema, async (): Promise<PlayerStats> => {
+    return getPlayerStats();
   });
 };
