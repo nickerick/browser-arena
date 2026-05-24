@@ -8,17 +8,23 @@ import { registerGameGateway } from './game/gateway';
 
 const app = Fastify({ logger: true });
 
+// Plugins
 app.register(fastifyCors, { origin: true });
-app.register(healthHandlers, { prefix: '/api' });
-app.register(statsHandlers, { prefix: '/api' });
 
+// Serves client bundle in production build
 if (process.env.NODE_ENV === 'production') {
   app.register(fastifyStatic, {
     root: path.join(__dirname, '../../client/dist'),
   });
 }
 
+// Handlers
+app.register(healthHandlers, { prefix: '/api' });
+app.register(statsHandlers, { prefix: '/api' });
+
+// WebSockets
+registerGameGateway(app.server);
+
 app.listen({ port: 3001, host: '0.0.0.0' }, (err) => {
   if (err) process.exit(1);
-  registerGameGateway(app.server);
 });
