@@ -1,122 +1,71 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useRef } from 'react';
+import { GameCanvas } from './components/GameCanvas';
+import { NetworkClient } from './network/NetworkClient';
 
-function App() {
-  const [count, setCount] = useState(0)
+const client = new NetworkClient();
+
+export default function App() {
+  const [pingResult, setPingResult] = useState<string | null>(null);
+  const [wsStatus, setWsStatus] = useState<'disconnected' | 'connected'>('disconnected');
+  const [wsMessage, setWsMessage] = useState<string | null>(null);
+  const connected = useRef(false);
+
+  async function handlePing() {
+    setPingResult('...');
+    const res = await fetch('/api/ping');
+    const data = await res.json();
+    setPingResult(JSON.stringify(data));
+  }
+
+  function handleToggleWs() {
+    if (connected.current) {
+      client.disconnect();
+      connected.current = false;
+      setWsStatus('disconnected');
+      setWsMessage(null);
+    } else {
+      client.connect(
+        (msg) => setWsMessage(JSON.stringify(msg)),
+        () => {
+          connected.current = false;
+          setWsStatus('disconnected');
+          setWsMessage(null);
+        },
+      );
+      connected.current = true;
+      setWsStatus('connected');
+    }
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get startfed</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <h1 style={{ fontSize: 24 }}>browser-arena</h1>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <h2 style={{ fontSize: 14, opacity: 0.5 }}>HTTP</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={handlePing}>ping server</button>
+          {pingResult && <code style={{ fontSize: 13 }}>{pingResult}</code>}
         </div>
       </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <h2 style={{ fontSize: 14, opacity: 0.5 }}>WebSocket</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={handleToggleWs}>
+            {wsStatus === 'connected' ? 'disconnect' : 'connect websocket'}
+          </button>
+          <span style={{ fontSize: 13, color: wsStatus === 'connected' ? '#4ecca3' : '#888' }}>
+            {wsStatus}
+          </span>
+          {wsMessage && <code style={{ fontSize: 13 }}>{wsMessage}</code>}
+        </div>
+      </section>
+
+      <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <h2 style={{ fontSize: 14, opacity: 0.5 }}>canvas</h2>
+        <GameCanvas />
+      </section>
+    </div>
+  );
 }
-
-export default App
