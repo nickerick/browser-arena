@@ -50,4 +50,5 @@ jobs:
     with:
       version: ${{ needs.tag.outputs.new_tag }}
     permissions:
+      contents: read
       packages: write
