@@ -1,4 +1,4 @@
-import type { PlayerState, ServerMessage } from '@browser-arena/shared';
+import type { ServerMessage } from '@browser-arena/shared';
 import { InputHandler } from './InputHandler';
 import { NetworkClient } from '../network/NetworkClient';
 
@@ -7,6 +7,16 @@ const RADIUS = 20;
 const SPEED_PPS = 400;
 const WORLD_W = 800;
 const WORLD_H = 500;
+const SERVER_TICK_MS = 1000 / 20;
+
+interface RemotePlayer {
+  id: string;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  lastUpdateAt: number;
+}
 
 export class Game {
   private ctx: CanvasRenderingContext2D;
@@ -16,7 +26,7 @@ export class Game {
   private w: number;
   private h: number;
 
-  private players: PlayerState[] = [];
+  private remotePlayers = new Map<string, RemotePlayer>();
   private myX = WORLD_W / 2;
   private myY = WORLD_H / 2;
   private lastTimestamp: number | null = null;
@@ -36,8 +46,29 @@ export class Game {
 
   onServerMessage(msg: ServerMessage) {
     if (msg.type === 'state_update') {
-      this.players = msg.players;
-      const me = msg.players.find(p => p.id === this.network.playerId);
+      const now = performance.now();
+      const myId = this.network.playerId;
+
+      for (const p of msg.players) {
+        if (p.id === myId) continue;
+        const existing = this.remotePlayers.get(p.id);
+        this.remotePlayers.set(p.id, {
+          id: p.id,
+          fromX: existing ? this.interpolatedPos(existing).x : p.x,
+          fromY: existing ? this.interpolatedPos(existing).y : p.y,
+          toX: p.x,
+          toY: p.y,
+          lastUpdateAt: now,
+        });
+      }
+
+      // Remove players who left
+      const ids = new Set(msg.players.map(p => p.id));
+      for (const id of this.remotePlayers.keys()) {
+        if (!ids.has(id)) this.remotePlayers.delete(id);
+      }
+
+      const me = msg.players.find(p => p.id === myId);
       if (me) {
         const dx = me.x - this.myX;
         const dy = me.y - this.myY;
@@ -53,10 +84,18 @@ export class Game {
         }
       }
     } else if (msg.type === 'init') {
-      // Will get our spawn position on the first state_update; reset to center for now
       this.myX = WORLD_W / 2;
       this.myY = WORLD_H / 2;
+      this.remotePlayers.clear();
     }
+  }
+
+  private interpolatedPos(p: RemotePlayer): { x: number; y: number } {
+    const t = Math.min(1, (performance.now() - p.lastUpdateAt) / SERVER_TICK_MS);
+    return {
+      x: p.fromX + (p.toX - p.fromX) * t,
+      y: p.fromY + (p.toY - p.fromY) * t,
+    };
   }
 
   start() {
@@ -101,25 +140,33 @@ export class Game {
 
   private render() {
     const { ctx, w, h } = this;
-    const myId = this.network.playerId;
 
     ctx.fillStyle = '#0f0f1a';
     ctx.fillRect(0, 0, w, h);
 
-    for (const player of this.players) {
-      const isMe = player.id === myId;
-      const x = isMe ? this.myX : player.x;
-      const y = isMe ? this.myY : player.y;
-
-      ctx.fillStyle = isMe ? '#4ecca3' : '#f4a261';
+    // Local player
+    if (this.network.playerId) {
+      ctx.fillStyle = '#4ecca3';
       ctx.beginPath();
-      ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
+      ctx.arc(this.myX, this.myY, RADIUS, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.fillStyle = '#fff';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(isMe ? 'you' : 'enemy', x, y - RADIUS - 6);
+      ctx.fillText('you', this.myX, this.myY - RADIUS - 6);
+    }
+
+    // Remote players — interpolated
+    for (const remote of this.remotePlayers.values()) {
+      const { x, y } = this.interpolatedPos(remote);
+      ctx.fillStyle = '#f4a261';
+      ctx.beginPath();
+      ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('enemy', x, y - RADIUS - 6);
     }
   }
 
