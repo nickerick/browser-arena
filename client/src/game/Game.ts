@@ -63,12 +63,12 @@ export class Game {
       }
 
       // Remove players who left
-      const ids = new Set(msg.players.map(p => p.id));
+      const ids = new Set(msg.players.map((p) => p.id));
       for (const id of this.remotePlayers.keys()) {
         if (!ids.has(id)) this.remotePlayers.delete(id);
       }
 
-      const me = msg.players.find(p => p.id === myId);
+      const me = msg.players.find((p) => p.id === myId);
       if (me) {
         const dx = me.x - this.myX;
         const dy = me.y - this.myY;
@@ -114,15 +114,23 @@ export class Game {
 
   private isMoving() {
     const { input } = this;
-    return input.isDown('w') || input.isDown('s') || input.isDown('a') || input.isDown('d')
-        || input.isDown('arrowup') || input.isDown('arrowdown') || input.isDown('arrowleft') || input.isDown('arrowright');
+    return (
+      input.isDown('w') ||
+      input.isDown('s') ||
+      input.isDown('a') ||
+      input.isDown('d') ||
+      input.isDown('arrowup') ||
+      input.isDown('arrowdown') ||
+      input.isDown('arrowleft') ||
+      input.isDown('arrowright')
+    );
   }
 
   private predictMovement(dt: number) {
     const speed = SPEED_PPS * dt;
-    if (this.input.isDown('w') || this.input.isDown('arrowup'))    this.myY -= speed;
-    if (this.input.isDown('s') || this.input.isDown('arrowdown'))  this.myY += speed;
-    if (this.input.isDown('a') || this.input.isDown('arrowleft'))  this.myX -= speed;
+    if (this.input.isDown('w') || this.input.isDown('arrowup')) this.myY -= speed;
+    if (this.input.isDown('s') || this.input.isDown('arrowdown')) this.myY += speed;
+    if (this.input.isDown('a') || this.input.isDown('arrowleft')) this.myX -= speed;
     if (this.input.isDown('d') || this.input.isDown('arrowright')) this.myX += speed;
 
     this.myX = Math.max(RADIUS, Math.min(WORLD_W - RADIUS, this.myX));
@@ -131,9 +139,9 @@ export class Game {
 
   private sendInput() {
     const keys: string[] = [];
-    if (this.input.isDown('w') || this.input.isDown('arrowup'))    keys.push('w');
-    if (this.input.isDown('s') || this.input.isDown('arrowdown'))  keys.push('s');
-    if (this.input.isDown('a') || this.input.isDown('arrowleft'))  keys.push('a');
+    if (this.input.isDown('w') || this.input.isDown('arrowup')) keys.push('w');
+    if (this.input.isDown('s') || this.input.isDown('arrowdown')) keys.push('s');
+    if (this.input.isDown('a') || this.input.isDown('arrowleft')) keys.push('a');
     if (this.input.isDown('d') || this.input.isDown('arrowright')) keys.push('d');
     socket.send({ type: 'input', keys });
   }

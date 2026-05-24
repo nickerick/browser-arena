@@ -22,7 +22,7 @@ class GameSocket {
       try {
         const msg: ServerMessage = JSON.parse(e.data);
         if (msg.type === 'init') this.playerId = msg.id;
-        this.handlers.forEach(h => h(msg));
+        this.handlers.forEach((h) => h(msg));
       } catch {
         console.warn('unparseable message:', e.data);
       }
