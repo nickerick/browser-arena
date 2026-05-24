@@ -1,6 +1,6 @@
 import type { ServerMessage } from '@browser-arena/shared';
 import { InputHandler } from './InputHandler';
-import { NetworkClient } from '../network/NetworkClient';
+import { socket } from '../api/socket';
 
 const RADIUS = 20;
 // Matches server: 20px/tick * 20ticks/s
@@ -21,8 +21,8 @@ interface RemotePlayer {
 export class Game {
   private ctx: CanvasRenderingContext2D;
   private input: InputHandler;
-  private network: NetworkClient;
   private animationFrame: number | null = null;
+  private unsubscribe: () => void;
   private w: number;
   private h: number;
 
@@ -31,10 +31,10 @@ export class Game {
   private myY = WORLD_H / 2;
   private lastTimestamp: number | null = null;
 
-  constructor(canvas: HTMLCanvasElement, network: NetworkClient) {
+  constructor(canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
     this.input = new InputHandler();
-    this.network = network;
+    this.unsubscribe = socket.on((msg) => this.onServerMessage(msg));
 
     const dpr = window.devicePixelRatio || 1;
     this.w = canvas.clientWidth;
@@ -47,7 +47,7 @@ export class Game {
   onServerMessage(msg: ServerMessage) {
     if (msg.type === 'state_update') {
       const now = performance.now();
-      const myId = this.network.playerId;
+      const myId = socket.playerId;
 
       for (const p of msg.players) {
         if (p.id === myId) continue;
@@ -135,7 +135,7 @@ export class Game {
     if (this.input.isDown('s') || this.input.isDown('arrowdown'))  keys.push('s');
     if (this.input.isDown('a') || this.input.isDown('arrowleft'))  keys.push('a');
     if (this.input.isDown('d') || this.input.isDown('arrowright')) keys.push('d');
-    this.network.send({ type: 'input', keys });
+    socket.send({ type: 'input', keys });
   }
 
   private render() {
@@ -145,7 +145,7 @@ export class Game {
     ctx.fillRect(0, 0, w, h);
 
     // Local player
-    if (this.network.playerId) {
+    if (socket.playerId) {
       ctx.fillStyle = '#4ecca3';
       ctx.beginPath();
       ctx.arc(this.myX, this.myY, RADIUS, 0, Math.PI * 2);
@@ -173,5 +173,6 @@ export class Game {
   destroy() {
     if (this.animationFrame !== null) cancelAnimationFrame(this.animationFrame);
     this.input.destroy();
+    this.unsubscribe();
   }
 }
