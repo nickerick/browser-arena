@@ -37,6 +37,6 @@ wss.on('connection', (socket) => {
   });
 });
 
-app.listen({ port: 3001 }, (err) => {
+app.listen({ port: 3001, host: '0.0.0.0' }, (err) => {
   if (err) process.exit(1);
 });

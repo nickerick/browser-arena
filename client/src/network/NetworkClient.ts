@@ -2,7 +2,7 @@ import type { ClientMessage, ServerMessage } from '@browser-arena/shared';
 
 const WS_URL = import.meta.env.DEV
   ? 'ws://localhost:3001'
-  : `wss://${window.location.host}`;
+  : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`;
 
 export class NetworkClient {
   private socket: WebSocket | null = null;
