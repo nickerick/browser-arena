@@ -4,15 +4,15 @@ import fastifyCors from '@fastify/cors';
 import { WebSocketServer } from 'ws';
 import path from 'path';
 import { GameRoom } from './game/GameRoom';
-import { healthRoutes } from './routes/health';
-import { statsRoutes } from './routes/stats';
+import { healthHandlers } from './handlers/health';
+import { statsHandlers } from './handlers/stats';
 
 const app = Fastify({ logger: true });
 const room = new GameRoom();
 
 app.register(fastifyCors, { origin: true });
-app.register(healthRoutes);
-app.register(statsRoutes);
+app.register(healthHandlers, { prefix: '/api' });
+app.register(statsHandlers, { prefix: '/api' });
 
 if (process.env.NODE_ENV === 'production') {
   app.register(fastifyStatic, {
