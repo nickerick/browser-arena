@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      new_tag: ${{ steps.version.outputs.new_tag }}
 
     steps:
       - name: Checkout
@@ -41,3 +43,11 @@ jobs:
         run: gh release create "${{ steps.version.outputs.new_tag }}" --title "${{ steps.version.outputs.new_tag }}" --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    needs: tag
+    uses: ./.github/workflows/publish.yml
+    with:
+      version: ${{ needs.tag.outputs.new_tag }}
+    permissions:
+      packages: write
