@@ -27,6 +27,12 @@ COPY --from=builder /app/server/dist ./server/dist
 COPY --from=builder /app/client/dist ./server/dist/client/dist
 COPY --from=prod-deps /app/server/node_modules ./server/node_modules
 
+# tsc compiles shared into server/dist/shared/src/ but runtime needs it as @browser-arena/shared.
+# Wire the compiled output into node_modules so require('@browser-arena/shared') resolves.
+RUN mkdir -p server/node_modules/@browser-arena/shared && \
+    cp -r server/dist/shared/src/. server/node_modules/@browser-arena/shared/ && \
+    printf '{"name":"@browser-arena/shared","main":"./index.js"}\n' > server/node_modules/@browser-arena/shared/package.json
+
 EXPOSE 3001
 ENV NODE_ENV=production
 CMD ["node", "server/dist/server/src/index.js"]
