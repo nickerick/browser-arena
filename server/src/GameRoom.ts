@@ -45,10 +45,37 @@ export class GameRoom {
 
   private tick() {
     this.processInputs();
+    this.resolveCollisions();
     this.broadcast({
       type: 'state_update',
       players: [...this.players.values()].map(({ id, x, y }) => ({ id, x, y })),
     });
+  }
+
+  private resolveCollisions() {
+    const players = [...this.players.values()];
+    const minDist = RADIUS * 2;
+    for (let i = 0; i < players.length; i++) {
+      for (let j = i + 1; j < players.length; j++) {
+        const a = players[i];
+        const b = players[j];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist === 0 || dist >= minDist) continue;
+        const overlap = (minDist - dist) / 2;
+        const nx = dx / dist;
+        const ny = dy / dist;
+        a.x -= nx * overlap;
+        a.y -= ny * overlap;
+        b.x += nx * overlap;
+        b.y += ny * overlap;
+        a.x = Math.max(RADIUS, Math.min(WORLD_W - RADIUS, a.x));
+        a.y = Math.max(RADIUS, Math.min(WORLD_H - RADIUS, a.y));
+        b.x = Math.max(RADIUS, Math.min(WORLD_W - RADIUS, b.x));
+        b.y = Math.max(RADIUS, Math.min(WORLD_H - RADIUS, b.y));
+      }
+    }
   }
 
   private processInputs() {
