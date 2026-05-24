@@ -1,0 +1,43 @@
+name: Version
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+jobs:
+  tag:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get bump type from PR labels
+        id: bump
+        run: |
+          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
+          if echo "$LABELS" | grep -q '"major"'; then
+            echo "type=major" >> $GITHUB_OUTPUT
+          elif echo "$LABELS" | grep -q '"minor"'; then
+            echo "type=minor" >> $GITHUB_OUTPUT
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Bump version tag
+        id: version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: ${{ steps.bump.outputs.type }}
+
+      - name: Create GitHub release
+        run: gh release create "${{ steps.version.outputs.new_tag }}" --title "${{ steps.version.outputs.new_tag }}" --generate-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
