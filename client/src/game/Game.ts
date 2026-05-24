@@ -146,6 +146,22 @@ export class Game {
     socket.send({ type: 'input', keys });
   }
 
+  private drawHeart(x: number, y: number) {
+    const { ctx } = this;
+    const r = RADIUS;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.beginPath();
+    ctx.moveTo(0, r * 0.35);
+    ctx.bezierCurveTo(r * 0.5, r * 0.1, r, -r * 0.35, r * 0.5, -r * 0.65);
+    ctx.bezierCurveTo(r * 0.2, -r * 0.9, 0, -r * 0.7, 0, -r * 0.35);
+    ctx.bezierCurveTo(0, -r * 0.7, -r * 0.2, -r * 0.9, -r * 0.5, -r * 0.65);
+    ctx.bezierCurveTo(-r, -r * 0.35, -r * 0.5, r * 0.1, 0, r * 0.35);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
   private render() {
     const { ctx, w, h } = this;
 
@@ -155,9 +171,7 @@ export class Game {
     // Local player
     if (socket.playerId) {
       ctx.fillStyle = '#4ecca3';
-      ctx.beginPath();
-      ctx.arc(this.myX, this.myY, RADIUS, 0, Math.PI * 2);
-      ctx.fill();
+      this.drawHeart(this.myX, this.myY);
       ctx.fillStyle = '#fff';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
@@ -167,14 +181,12 @@ export class Game {
     // Remote players — interpolated
     for (const remote of this.remotePlayers.values()) {
       const { x, y } = this.interpolatedPos(remote);
-      ctx.fillStyle = '#f4a261';
-      ctx.beginPath();
-      ctx.arc(x, y, RADIUS, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillStyle = '#ff69b4';
+      this.drawHeart(x, y);
       ctx.fillStyle = '#fff';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('enemy', x, y - RADIUS - 6);
+      ctx.fillText('Babbi', x, y - RADIUS - 6);
     }
   }
 
