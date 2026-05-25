@@ -7,6 +7,7 @@ export class InputHandler {
   }
 
   private onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === ' ') e.preventDefault();
     this.keys.add(e.key.toLowerCase());
   };
 
