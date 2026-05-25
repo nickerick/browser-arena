@@ -1,13 +1,24 @@
 import type { ServerMessage } from '@browser-arena/shared';
 import { InputHandler } from './InputHandler';
+import { Sprite } from './Sprite';
+import { ProjectileSystem } from './ProjectileSystem';
 import { socket } from '../api/socket';
 
 const RADIUS = 20;
-// Matches server: 20px/tick * 20ticks/s
 const SPEED_PPS = 400;
 const WORLD_W = 800;
 const WORLD_H = 500;
 const SERVER_TICK_MS = 1000 / 20;
+
+const PLAYER_SPRITE_CONFIG = {
+  src: '/player.png',
+  frameW: 40,
+  frameH: 64,
+  frameCount: 6,
+  fps: 8,
+  rows: { down: 0, left: 1, up: 2, right: { row: 1, flipX: true } },
+  defaultFacing: 'down',
+};
 
 interface RemotePlayer {
   id: string;
@@ -21,6 +32,8 @@ interface RemotePlayer {
 export class Game {
   private ctx: CanvasRenderingContext2D;
   private input: InputHandler;
+  private sprite: Sprite;
+  private projectiles: ProjectileSystem;
   private animationFrame: number | null = null;
   private unsubscribe: () => void;
   private w: number;
@@ -31,9 +44,15 @@ export class Game {
   private myY = WORLD_H / 2;
   private lastTimestamp: number | null = null;
 
+  private lastDirX = 0;
+  private lastDirY = -1;
+  private prevSpaceDown = false;
+
   constructor(canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
     this.input = new InputHandler();
+    this.sprite = new Sprite(PLAYER_SPRITE_CONFIG);
+    this.projectiles = new ProjectileSystem();
     this.unsubscribe = socket.on((msg) => this.onServerMessage(msg));
 
     const dpr = window.devicePixelRatio || 1;
@@ -62,7 +81,6 @@ export class Game {
         });
       }
 
-      // Remove players who left
       const ids = new Set(msg.players.map((p) => p.id));
       for (const id of this.remotePlayers.keys()) {
         if (!ids.has(id)) this.remotePlayers.delete(id);
@@ -107,6 +125,8 @@ export class Game {
     this.lastTimestamp = timestamp;
 
     this.predictMovement(dt);
+    this.handleFire();
+    this.projectiles.update(dt, WORLD_W, WORLD_H);
     this.sendInput();
     this.render();
     this.animationFrame = requestAnimationFrame((t) => this.loop(t));
@@ -115,26 +135,45 @@ export class Game {
   private isMoving() {
     const { input } = this;
     return (
-      input.isDown('w') ||
-      input.isDown('s') ||
-      input.isDown('a') ||
-      input.isDown('d') ||
-      input.isDown('arrowup') ||
-      input.isDown('arrowdown') ||
-      input.isDown('arrowleft') ||
-      input.isDown('arrowright')
+      input.isDown('w') || input.isDown('s') ||
+      input.isDown('a') || input.isDown('d') ||
+      input.isDown('arrowup') || input.isDown('arrowdown') ||
+      input.isDown('arrowleft') || input.isDown('arrowright')
     );
   }
 
   private predictMovement(dt: number) {
-    const speed = SPEED_PPS * dt;
-    if (this.input.isDown('w') || this.input.isDown('arrowup')) this.myY -= speed;
-    if (this.input.isDown('s') || this.input.isDown('arrowdown')) this.myY += speed;
-    if (this.input.isDown('a') || this.input.isDown('arrowleft')) this.myX -= speed;
-    if (this.input.isDown('d') || this.input.isDown('arrowright')) this.myX += speed;
+    let dx = 0;
+    let dy = 0;
+    if (this.input.isDown('w') || this.input.isDown('arrowup')) dy -= 1;
+    if (this.input.isDown('s') || this.input.isDown('arrowdown')) dy += 1;
+    if (this.input.isDown('a') || this.input.isDown('arrowleft')) dx -= 1;
+    if (this.input.isDown('d') || this.input.isDown('arrowright')) dx += 1;
 
-    this.myX = Math.max(RADIUS, Math.min(WORLD_W - RADIUS, this.myX));
-    this.myY = Math.max(RADIUS, Math.min(WORLD_H - RADIUS, this.myY));
+    if (dx !== 0 || dy !== 0) {
+      const len = Math.sqrt(dx * dx + dy * dy);
+      this.lastDirX = dx / len;
+      this.lastDirY = dy / len;
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        this.sprite.setFacing(dx < 0 ? 'left' : 'right');
+      } else {
+        this.sprite.setFacing(dy < 0 ? 'up' : 'down');
+      }
+    }
+
+    this.sprite.update(dt, this.isMoving());
+
+    const speed = SPEED_PPS * dt;
+    this.myX = Math.max(RADIUS, Math.min(WORLD_W - RADIUS, this.myX + dx * speed));
+    this.myY = Math.max(RADIUS, Math.min(WORLD_H - RADIUS, this.myY + dy * speed));
+  }
+
+  private handleFire() {
+    const spaceDown = this.input.isDown(' ');
+    if (spaceDown && !this.prevSpaceDown) {
+      this.projectiles.fire(this.myX, this.myY, this.lastDirX, this.lastDirY);
+    }
+    this.prevSpaceDown = spaceDown;
   }
 
   private sendInput() {
@@ -170,15 +209,20 @@ export class Game {
 
     // Local player
     if (socket.playerId) {
-      ctx.fillStyle = '#4ecca3';
-      this.drawHeart(this.myX, this.myY);
+      const drawn = this.sprite.draw(ctx, this.myX, this.myY);
+      if (!drawn) {
+        ctx.fillStyle = '#4ecca3';
+        this.drawHeart(this.myX, this.myY);
+      }
       ctx.fillStyle = '#fff';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('you', this.myX, this.myY - RADIUS - 6);
+      ctx.fillText('you', this.myX, this.myY - this.sprite.halfH - 6);
     }
 
-    // Remote players — interpolated
+    this.projectiles.draw(ctx);
+
+    // Remote players — interpolated, still using hearts for now
     for (const remote of this.remotePlayers.values()) {
       const { x, y } = this.interpolatedPos(remote);
       ctx.fillStyle = '#ff69b4';
