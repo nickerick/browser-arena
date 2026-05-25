@@ -1,55 +1,42 @@
 import type { ServerMessage } from '@browser-arena/shared';
-import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED, TICK_RATE } from '@browser-arena/shared';
+import { WORLD_W, WORLD_H } from '@browser-arena/shared';
 import { InputHandler, type InputState } from './InputHandler';
-import { Sprite } from './Sprite';
+import { Player } from './entities/Player';
+import { RemotePlayer } from './entities/RemotePlayer';
 import { ProjectileSystem } from './ProjectileSystem';
+import { Arena } from './world/Arena';
 import { socket } from '../api/socket';
 
-const SERVER_TICK_MS = 1000 / TICK_RATE;
-
-const PLAYER_SPRITE_CONFIG = {
-  src: '/player.png',
-  frameW: 40,
-  frameH: 64,
-  frameCount: 6,
-  fps: 8,
-  rows: { down: 0, left: 1, up: 2, right: { row: 1, flipX: true } },
-  defaultFacing: 'down',
-};
-
-interface RemotePlayer {
-  id: string;
-  fromX: number;
-  fromY: number;
-  toX: number;
-  toY: number;
-  lastUpdateAt: number;
-}
-
 export class Game {
+  /** 2D drawing context for the canvas. */
   private ctx: CanvasRenderingContext2D;
+  /** Reads keyboard state each frame. */
   private input: InputHandler;
-  private sprite: Sprite;
-  private projectiles: ProjectileSystem;
-  private animationFrame: number | null = null;
-  private unsubscribe: () => void;
-  private w: number;
-  private h: number;
-
+  /** The local player. */
+  private player: Player;
+  /** Other connected players, keyed by player ID. */
   private remotePlayers = new Map<string, RemotePlayer>();
-  private myX = WORLD_W / 2;
-  private myY = WORLD_H / 2;
+  /** Manages all in-flight projectiles. */
+  private projectiles: ProjectileSystem;
+  /** Current map — responsible for drawing the background. */
+  private arena: Arena;
+  /** Handle returned by requestAnimationFrame, used to cancel the loop on destroy. */
+  private animationFrame: number | null = null;
+  /** Cancels the socket message subscription on destroy. */
+  private unsubscribe: () => void;
+  /** Canvas logical width in CSS pixels (not scaled by devicePixelRatio). */
+  private w: number;
+  /** Canvas logical height in CSS pixels (not scaled by devicePixelRatio). */
+  private h: number;
+  /** Timestamp of the previous frame, used to compute dt (delta time in seconds). */
   private lastTimestamp: number | null = null;
-
-  private lastDirX = 0;
-  private lastDirY = -1;
-  private prevSpaceDown = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
     this.input = new InputHandler();
-    this.sprite = new Sprite(PLAYER_SPRITE_CONFIG);
+    this.player = new Player(WORLD_W / 2, WORLD_H / 2);
     this.projectiles = new ProjectileSystem();
+    this.arena = new Arena();
     this.unsubscribe = socket.on((msg) => this.onServerMessage(msg));
 
     const dpr = window.devicePixelRatio || 1;
@@ -62,20 +49,16 @@ export class Game {
 
   onServerMessage(msg: ServerMessage) {
     if (msg.type === 'state_update') {
-      const now = performance.now();
       const myId = socket.playerId;
 
       for (const p of msg.players) {
         if (p.id === myId) continue;
         const existing = this.remotePlayers.get(p.id);
-        this.remotePlayers.set(p.id, {
-          id: p.id,
-          fromX: existing ? this.interpolatedPos(existing).x : p.x,
-          fromY: existing ? this.interpolatedPos(existing).y : p.y,
-          toX: p.x,
-          toY: p.y,
-          lastUpdateAt: now,
-        });
+        if (existing) {
+          existing.moveTo(p.x, p.y);
+        } else {
+          this.remotePlayers.set(p.id, new RemotePlayer(p.id, p.x, p.y));
+        }
       }
 
       const ids = new Set(msg.players.map((p) => p.id));
@@ -85,32 +68,12 @@ export class Game {
 
       const me = msg.players.find((p) => p.id === myId);
       if (me) {
-        const dx = me.x - this.myX;
-        const dy = me.y - this.myY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > 80) {
-          this.myX = me.x;
-          this.myY = me.y;
-        } else if (dist > 4 && this.input.read().moving) {
-          // Only soft-correct while moving — stopping causes the server to lag
-          // behind our prediction, and reconciling it back causes visible rubberband
-          this.myX += dx * 0.2;
-          this.myY += dy * 0.2;
-        }
+        this.player.reconcile(me.x, me.y, this.input.read().moving);
       }
     } else if (msg.type === 'init') {
-      this.myX = WORLD_W / 2;
-      this.myY = WORLD_H / 2;
+      this.player.reset(WORLD_W / 2, WORLD_H / 2);
       this.remotePlayers.clear();
     }
-  }
-
-  private interpolatedPos(p: RemotePlayer): { x: number; y: number } {
-    const t = Math.min(1, (performance.now() - p.lastUpdateAt) / SERVER_TICK_MS);
-    return {
-      x: p.fromX + (p.toX - p.fromX) * t,
-      y: p.fromY + (p.toY - p.fromY) * t,
-    };
   }
 
   start() {
@@ -122,38 +85,14 @@ export class Game {
     this.lastTimestamp = timestamp;
 
     const input = this.input.read();
-    this.predictMovement(dt, input);
-    this.handleFire(input);
+    this.player.update(dt, input);
+    if (this.player.fireIntent) {
+      this.projectiles.fire(this.player.x, this.player.y, this.player.dirX, this.player.dirY);
+    }
     this.projectiles.update(dt, WORLD_W, WORLD_H);
     this.sendInput(input);
     this.render();
     this.animationFrame = requestAnimationFrame((t) => this.loop(t));
-  }
-
-  private predictMovement(dt: number, { dx, dy, moving }: InputState) {
-    if (moving) {
-      const len = Math.sqrt(dx * dx + dy * dy);
-      this.lastDirX = dx / len;
-      this.lastDirY = dy / len;
-      if (Math.abs(dx) >= Math.abs(dy)) {
-        this.sprite.setFacing(dx < 0 ? 'left' : 'right');
-      } else {
-        this.sprite.setFacing(dy < 0 ? 'up' : 'down');
-      }
-    }
-
-    this.sprite.update(dt, moving);
-
-    const speed = PLAYER_SPEED * dt;
-    this.myX = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, this.myX + dx * speed));
-    this.myY = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, this.myY + dy * speed));
-  }
-
-  private handleFire({ fire }: InputState) {
-    if (fire && !this.prevSpaceDown) {
-      this.projectiles.fire(this.myX, this.myY, this.lastDirX, this.lastDirY);
-    }
-    this.prevSpaceDown = fire;
   }
 
   private sendInput({ dx, dy }: InputState) {
@@ -165,53 +104,13 @@ export class Game {
     socket.send({ type: 'input', keys });
   }
 
-  private drawHeart(x: number, y: number) {
-    const { ctx } = this;
-    const r = PLAYER_RADIUS;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.beginPath();
-    ctx.moveTo(0, r * 0.35);
-    ctx.bezierCurveTo(r * 0.5, r * 0.1, r, -r * 0.35, r * 0.5, -r * 0.65);
-    ctx.bezierCurveTo(r * 0.2, -r * 0.9, 0, -r * 0.7, 0, -r * 0.35);
-    ctx.bezierCurveTo(0, -r * 0.7, -r * 0.2, -r * 0.9, -r * 0.5, -r * 0.65);
-    ctx.bezierCurveTo(-r, -r * 0.35, -r * 0.5, r * 0.1, 0, r * 0.35);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-
   private render() {
-    const { ctx, w, h } = this;
+    const { ctx } = this;
+    this.arena.draw(ctx);
 
-    ctx.fillStyle = '#0f0f1a';
-    ctx.fillRect(0, 0, w, h);
-
-    // Local player
-    if (socket.playerId) {
-      const drawn = this.sprite.draw(ctx, this.myX, this.myY);
-      if (!drawn) {
-        ctx.fillStyle = '#4ecca3';
-        this.drawHeart(this.myX, this.myY);
-      }
-      ctx.fillStyle = '#fff';
-      ctx.font = '11px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('you', this.myX, this.myY - this.sprite.halfH - 6);
-    }
-
+    if (socket.playerId) this.player.draw(ctx);
     this.projectiles.draw(ctx);
-
-    // Remote players — interpolated, still using hearts for now
-    for (const remote of this.remotePlayers.values()) {
-      const { x, y } = this.interpolatedPos(remote);
-      ctx.fillStyle = '#ff69b4';
-      this.drawHeart(x, y);
-      ctx.fillStyle = '#fff';
-      ctx.font = '11px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('Babbi', x, y - PLAYER_RADIUS - 6);
-    }
+    for (const remote of this.remotePlayers.values()) remote.draw(ctx);
   }
 
   destroy() {
