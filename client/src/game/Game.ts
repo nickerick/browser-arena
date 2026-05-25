@@ -1,5 +1,5 @@
 import type { ServerMessage } from '@browser-arena/shared';
-import { InputHandler } from './InputHandler';
+import { InputHandler, type InputState } from './InputHandler';
 import { Sprite } from './Sprite';
 import { ProjectileSystem } from './ProjectileSystem';
 import { socket } from '../api/socket';
@@ -94,7 +94,7 @@ export class Game {
         if (dist > 80) {
           this.myX = me.x;
           this.myY = me.y;
-        } else if (dist > 4 && this.isMoving()) {
+        } else if (dist > 4 && this.input.read().moving) {
           // Only soft-correct while moving — stopping causes the server to lag
           // behind our prediction, and reconciling it back causes visible rubberband
           this.myX += dx * 0.2;
@@ -124,33 +124,17 @@ export class Game {
     const dt = this.lastTimestamp !== null ? (timestamp - this.lastTimestamp) / 1000 : 0;
     this.lastTimestamp = timestamp;
 
-    this.predictMovement(dt);
-    this.handleFire();
+    const input = this.input.read();
+    this.predictMovement(dt, input);
+    this.handleFire(input);
     this.projectiles.update(dt, WORLD_W, WORLD_H);
-    this.sendInput();
+    this.sendInput(input);
     this.render();
     this.animationFrame = requestAnimationFrame((t) => this.loop(t));
   }
 
-  private isMoving() {
-    const { input } = this;
-    return (
-      input.isDown('w') || input.isDown('s') ||
-      input.isDown('a') || input.isDown('d') ||
-      input.isDown('arrowup') || input.isDown('arrowdown') ||
-      input.isDown('arrowleft') || input.isDown('arrowright')
-    );
-  }
-
-  private predictMovement(dt: number) {
-    let dx = 0;
-    let dy = 0;
-    if (this.input.isDown('w') || this.input.isDown('arrowup')) dy -= 1;
-    if (this.input.isDown('s') || this.input.isDown('arrowdown')) dy += 1;
-    if (this.input.isDown('a') || this.input.isDown('arrowleft')) dx -= 1;
-    if (this.input.isDown('d') || this.input.isDown('arrowright')) dx += 1;
-
-    if (dx !== 0 || dy !== 0) {
+  private predictMovement(dt: number, { dx, dy, moving }: InputState) {
+    if (moving) {
       const len = Math.sqrt(dx * dx + dy * dy);
       this.lastDirX = dx / len;
       this.lastDirY = dy / len;
@@ -161,27 +145,26 @@ export class Game {
       }
     }
 
-    this.sprite.update(dt, this.isMoving());
+    this.sprite.update(dt, moving);
 
     const speed = SPEED_PPS * dt;
     this.myX = Math.max(RADIUS, Math.min(WORLD_W - RADIUS, this.myX + dx * speed));
     this.myY = Math.max(RADIUS, Math.min(WORLD_H - RADIUS, this.myY + dy * speed));
   }
 
-  private handleFire() {
-    const spaceDown = this.input.isDown(' ');
-    if (spaceDown && !this.prevSpaceDown) {
+  private handleFire({ fire }: InputState) {
+    if (fire && !this.prevSpaceDown) {
       this.projectiles.fire(this.myX, this.myY, this.lastDirX, this.lastDirY);
     }
-    this.prevSpaceDown = spaceDown;
+    this.prevSpaceDown = fire;
   }
 
-  private sendInput() {
+  private sendInput({ dx, dy }: InputState) {
     const keys: string[] = [];
-    if (this.input.isDown('w') || this.input.isDown('arrowup')) keys.push('w');
-    if (this.input.isDown('s') || this.input.isDown('arrowdown')) keys.push('s');
-    if (this.input.isDown('a') || this.input.isDown('arrowleft')) keys.push('a');
-    if (this.input.isDown('d') || this.input.isDown('arrowright')) keys.push('d');
+    if (dy < 0) keys.push('w');
+    if (dy > 0) keys.push('s');
+    if (dx < 0) keys.push('a');
+    if (dx > 0) keys.push('d');
     socket.send({ type: 'input', keys });
   }
 
