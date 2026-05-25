@@ -1,11 +1,10 @@
-import type { ServerMessage } from '@browser-arena/shared';
 import { WORLD_W, WORLD_H } from '@browser-arena/shared';
-import { InputHandler, type InputState } from './InputHandler';
+import { InputHandler } from './InputHandler';
 import { Player } from './entities/Player';
 import { RemotePlayer } from './entities/RemotePlayer';
-import { ProjectileSystem } from './ProjectileSystem';
+import { ProjectileSystem } from './systems/ProjectileSystem';
 import { Arena } from './world/Arena';
-import { socket } from '../api/socket';
+import { ServerClient } from './network/ServerClient';
 
 export class Game {
   /** 2D drawing context for the canvas. */
@@ -20,10 +19,10 @@ export class Game {
   private projectiles: ProjectileSystem;
   /** Current map — responsible for drawing the background. */
   private arena: Arena;
+  /** Routes server messages to the appropriate entities. */
+  private server: ServerClient;
   /** Handle returned by requestAnimationFrame, used to cancel the loop on destroy. */
   private animationFrame: number | null = null;
-  /** Cancels the socket message subscription on destroy. */
-  private unsubscribe: () => void;
   /** Canvas logical width in CSS pixels (not scaled by devicePixelRatio). */
   private w: number;
   /** Canvas logical height in CSS pixels (not scaled by devicePixelRatio). */
@@ -37,7 +36,8 @@ export class Game {
     this.player = new Player(WORLD_W / 2, WORLD_H / 2);
     this.projectiles = new ProjectileSystem();
     this.arena = new Arena();
-    this.unsubscribe = socket.on((msg) => this.onServerMessage(msg));
+    this.server = new ServerClient(this.player, this.remotePlayers, this.input);
+    this.server.connect();
 
     const dpr = window.devicePixelRatio || 1;
     this.w = canvas.clientWidth;
@@ -45,35 +45,6 @@ export class Game {
     canvas.width = this.w * dpr;
     canvas.height = this.h * dpr;
     this.ctx.scale(dpr, dpr);
-  }
-
-  onServerMessage(msg: ServerMessage) {
-    if (msg.type === 'state_update') {
-      const myId = socket.playerId;
-
-      for (const p of msg.players) {
-        if (p.id === myId) continue;
-        const existing = this.remotePlayers.get(p.id);
-        if (existing) {
-          existing.moveTo(p.x, p.y);
-        } else {
-          this.remotePlayers.set(p.id, new RemotePlayer(p.id, p.x, p.y));
-        }
-      }
-
-      const ids = new Set(msg.players.map((p) => p.id));
-      for (const id of this.remotePlayers.keys()) {
-        if (!ids.has(id)) this.remotePlayers.delete(id);
-      }
-
-      const me = msg.players.find((p) => p.id === myId);
-      if (me) {
-        this.player.reconcile(me.x, me.y, this.input.read().moving);
-      }
-    } else if (msg.type === 'init') {
-      this.player.reset(WORLD_W / 2, WORLD_H / 2);
-      this.remotePlayers.clear();
-    }
   }
 
   start() {
@@ -90,25 +61,16 @@ export class Game {
       this.projectiles.fire(this.player.x, this.player.y, this.player.dirX, this.player.dirY);
     }
     this.projectiles.update(dt, WORLD_W, WORLD_H);
-    this.sendInput(input);
+    this.server.sendInput(input);
     this.render();
     this.animationFrame = requestAnimationFrame((t) => this.loop(t));
-  }
-
-  private sendInput({ dx, dy }: InputState) {
-    const keys: string[] = [];
-    if (dy < 0) keys.push('w');
-    if (dy > 0) keys.push('s');
-    if (dx < 0) keys.push('a');
-    if (dx > 0) keys.push('d');
-    socket.send({ type: 'input', keys });
   }
 
   private render() {
     const { ctx } = this;
     this.arena.draw(ctx);
 
-    if (socket.playerId) this.player.draw(ctx);
+    if (this.server.isConnected) this.player.draw(ctx);
     this.projectiles.draw(ctx);
     for (const remote of this.remotePlayers.values()) remote.draw(ctx);
   }
@@ -116,6 +78,6 @@ export class Game {
   destroy() {
     if (this.animationFrame !== null) cancelAnimationFrame(this.animationFrame);
     this.input.destroy();
-    this.unsubscribe();
+    this.server.destroy();
   }
 }
