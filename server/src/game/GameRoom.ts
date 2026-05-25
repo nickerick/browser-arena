@@ -1,10 +1,16 @@
 import { WebSocket } from 'ws';
-import { PlayerState, ServerMessage, ClientMessage } from '@browser-arena/shared';
+import {
+  PlayerState,
+  ServerMessage,
+  ClientMessage,
+  WORLD_W,
+  WORLD_H,
+  PLAYER_RADIUS,
+  PLAYER_SPEED,
+  TICK_RATE,
+} from '@browser-arena/shared';
 
-const SPEED = 20;
-const WORLD_W = 800;
-const WORLD_H = 500;
-const RADIUS = 20;
+const SPEED = PLAYER_SPEED / TICK_RATE;
 
 interface ConnectedPlayer extends PlayerState {
   socket: WebSocket;
@@ -22,8 +28,8 @@ export class GameRoom {
     const id = crypto.randomUUID();
     this.players.set(id, {
       id,
-      x: Math.random() * (WORLD_W - RADIUS * 4) + RADIUS * 2,
-      y: Math.random() * (WORLD_H - RADIUS * 4) + RADIUS * 2,
+      x: Math.random() * (WORLD_W - PLAYER_RADIUS * 4) + PLAYER_RADIUS * 2,
+      y: Math.random() * (WORLD_H - PLAYER_RADIUS * 4) + PLAYER_RADIUS * 2,
       socket,
       keys: [],
     });
@@ -54,7 +60,7 @@ export class GameRoom {
 
   private resolveCollisions() {
     const players = [...this.players.values()];
-    const minDist = RADIUS * 2;
+    const minDist = PLAYER_RADIUS * 2;
     for (let i = 0; i < players.length; i++) {
       for (let j = i + 1; j < players.length; j++) {
         const a = players[i];
@@ -70,10 +76,10 @@ export class GameRoom {
         a.y -= ny * overlap;
         b.x += nx * overlap;
         b.y += ny * overlap;
-        a.x = Math.max(RADIUS, Math.min(WORLD_W - RADIUS, a.x));
-        a.y = Math.max(RADIUS, Math.min(WORLD_H - RADIUS, a.y));
-        b.x = Math.max(RADIUS, Math.min(WORLD_W - RADIUS, b.x));
-        b.y = Math.max(RADIUS, Math.min(WORLD_H - RADIUS, b.y));
+        a.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, a.x));
+        a.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, a.y));
+        b.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, b.x));
+        b.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, b.y));
       }
     }
   }
@@ -85,8 +91,8 @@ export class GameRoom {
       if (player.keys.includes('a')) player.x -= SPEED;
       if (player.keys.includes('d')) player.x += SPEED;
 
-      player.x = Math.max(RADIUS, Math.min(WORLD_W - RADIUS, player.x));
-      player.y = Math.max(RADIUS, Math.min(WORLD_H - RADIUS, player.y));
+      player.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, player.x));
+      player.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, player.y));
     }
   }
 
