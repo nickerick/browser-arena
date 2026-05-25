@@ -70,6 +70,7 @@ export class Game {
       this.server.sendFire(this.player.dirX, this.player.dirY);
     }
     this.projectiles.update(dt);
+    for (const remote of this.remotePlayers.values()) remote.update(dt);
 
     // flush input to server
     this.server.sendInput(input);

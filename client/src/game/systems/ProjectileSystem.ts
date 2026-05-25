@@ -21,11 +21,12 @@ export class ProjectileSystem {
   /** Server-confirmed remote projectiles, simulated locally between ticks. */
   private remote = new Map<string, SimProjectile>();
 
+  /** Spawn a new client-predicted projectile from the local player. */
   fire(x: number, y: number, dirX: number, dirY: number) {
     this.local.push({ x, y, vx: dirX * PROJECTILE_SPEED, vy: dirY * PROJECTILE_SPEED, age: 0 });
   }
 
-  /** Advance all simulations one frame. Call once per render loop. */
+  /** Advance all projectile state one frame. */
   update(dt: number) {
     for (const p of this.local) advance(p, dt);
     this.local = this.local.filter((p) => p.age < PROJECTILE_LIFETIME);
