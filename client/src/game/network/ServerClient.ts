@@ -1,20 +1,26 @@
-import type { ServerMessage, PlayerState } from '@browser-arena/shared';
-import { WORLD_W, WORLD_H } from '@browser-arena/shared';
-import type { Player } from '../entities/Player';
-import { RemotePlayer } from '../entities/RemotePlayer';
+import type { ServerMessage } from '@browser-arena/shared';
+import type { PlayerSystem } from '../systems/PlayerSystem';
+import type { ProjectileSystem } from '../systems/ProjectileSystem';
 import type { InputHandler, InputState } from '../InputHandler';
 import { socket } from '../../api/socket';
 
+/**
+ * Manages all communication between the client and server.
+ *
+ * Outbound: sends player input and events each frame.
+ * Inbound: receives server messages and routes them to the appropriate systems
+ * (PlayerSystem for position updates, ProjectileSystem for projectile state, etc).
+ */
 export class ServerClient {
-  private player: Player;
-  private remotePlayers: Map<string, RemotePlayer>;
+  private players: PlayerSystem;
+  private projectiles: ProjectileSystem;
   private input: InputHandler;
   private unsubscribe: (() => void) | null = null;
 
-  constructor(player: Player, remotePlayers: Map<string, RemotePlayer>, input: InputHandler) {
-    this.player = player;
-    this.remotePlayers = remotePlayers;
+  constructor(players: PlayerSystem, input: InputHandler, projectiles: ProjectileSystem) {
+    this.players = players;
     this.input = input;
+    this.projectiles = projectiles;
   }
 
   connect() {
@@ -31,45 +37,29 @@ export class ServerClient {
     return !!socket.playerId;
   }
 
-  sendInput({ dx, dy }: InputState) {
+  sendInput({ moveX, moveY }: InputState) {
     const keys: string[] = [];
-    if (dy < 0) keys.push('w');
-    if (dy > 0) keys.push('s');
-    if (dx < 0) keys.push('a');
-    if (dx > 0) keys.push('d');
+    if (moveY < 0) keys.push('w');
+    if (moveY > 0) keys.push('s');
+    if (moveX < 0) keys.push('a');
+    if (moveX > 0) keys.push('d');
     socket.send({ type: 'input', keys });
   }
 
-  handle(msg: ServerMessage) {
-    if (msg.type === 'state_update') {
-      this.applyStateUpdate(msg.players);
-    } else if (msg.type === 'init') {
-      this.player.reset(WORLD_W / 2, WORLD_H / 2);
-      this.remotePlayers.clear();
-    }
+  sendFire(dirX: number, dirY: number) {
+    socket.send({ type: 'fire', dirX, dirY });
   }
 
-  private applyStateUpdate(players: PlayerState[]) {
-    const myId = socket.playerId;
-
-    for (const p of players) {
-      if (p.id === myId) continue;
-      const existing = this.remotePlayers.get(p.id);
-      if (existing) {
-        existing.moveTo(p.x, p.y);
-      } else {
-        this.remotePlayers.set(p.id, new RemotePlayer(p.id, p.x, p.y));
-      }
-    }
-
-    const ids = new Set(players.map((p) => p.id));
-    for (const id of this.remotePlayers.keys()) {
-      if (!ids.has(id)) this.remotePlayers.delete(id);
-    }
-
-    const me = players.find((p) => p.id === myId);
-    if (me) {
-      this.player.reconcile(me.x, me.y, this.input.read().moving);
+  private handle(msg: ServerMessage) {
+    const myId = socket.playerId ?? '';
+    if (msg.type === 'state_update') {
+      this.players.applyServerUpdate(msg.players, myId, this.input.read().moving);
+      this.projectiles.updateRemote(msg.projectiles, myId);
+    } else if (msg.type === 'init') {
+      this.players.reset();
+    } else if (msg.type === 'player_hit') {
+      this.projectiles.removeHit(msg.projectileId, msg.shooterId, myId);
+      this.players.takeDamage(msg.targetId, myId);
     }
   }
 }

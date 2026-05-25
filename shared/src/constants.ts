@@ -21,3 +21,12 @@ export const PROJECTILE_SPEED = 550;
 
 /** Time in seconds before a projectile is removed from the world. */
 export const PROJECTILE_LIFETIME = 2.5;
+
+/** Shape used for projectile-vs-player hit detection. */
+export const HITBOX_SHAPE: 'circle' | 'aabb' = 'circle';
+
+/** Half-width used when HITBOX_SHAPE is 'aabb'. */
+export const HITBOX_W = 40;
+
+/** Half-height used when HITBOX_SHAPE is 'aabb'. */
+export const HITBOX_H = 48;

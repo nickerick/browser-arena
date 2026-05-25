@@ -1,6 +1,7 @@
 import { WebSocket } from 'ws';
 import {
   PlayerState,
+  ProjectileState,
   ServerMessage,
   ClientMessage,
   WORLD_W,
@@ -8,20 +9,36 @@ import {
   PLAYER_RADIUS,
   PLAYER_SPEED,
   TICK_RATE,
+  PROJECTILE_SPEED,
+  PROJECTILE_RADIUS,
+  PROJECTILE_LIFETIME,
+  testHit,
 } from '@browser-arena/shared';
 
-const SPEED = PLAYER_SPEED / TICK_RATE;
+const DT = 1 / TICK_RATE;
+const MOVE_SPEED = PLAYER_SPEED * DT;
 
 interface ConnectedPlayer extends PlayerState {
   socket: WebSocket;
   keys: string[];
 }
 
+interface ServerProjectile {
+  id: string;
+  ownerId: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  age: number;
+}
+
 export class GameRoom {
   private players = new Map<string, ConnectedPlayer>();
+  private projectiles = new Map<string, ServerProjectile>();
 
   constructor() {
-    setInterval(() => this.tick(), 1000 / 20);
+    setInterval(() => this.tick(), 1000 / TICK_RATE);
   }
 
   addPlayer(socket: WebSocket): string {
@@ -42,6 +59,8 @@ export class GameRoom {
     if (!player) return;
     if (msg.type === 'input') {
       player.keys = msg.keys;
+    } else if (msg.type === 'fire') {
+      this.spawnProjectile(playerId, msg.dirX, msg.dirY);
     }
   }
 
@@ -49,13 +68,81 @@ export class GameRoom {
     this.players.delete(id);
   }
 
+  private spawnProjectile(ownerId: string, dirX: number, dirY: number) {
+    const owner = this.players.get(ownerId);
+    if (!owner) return;
+    const id = crypto.randomUUID();
+    this.projectiles.set(id, {
+      id,
+      ownerId,
+      x: owner.x,
+      y: owner.y,
+      vx: dirX * PROJECTILE_SPEED,
+      vy: dirY * PROJECTILE_SPEED,
+      age: 0,
+    });
+  }
+
   private tick() {
     this.processInputs();
     this.resolveCollisions();
+    this.tickProjectiles();
     this.broadcast({
       type: 'state_update',
       players: [...this.players.values()].map(({ id, x, y }) => ({ id, x, y })),
+      projectiles: [...this.projectiles.values()].map(({ id, x, y, vx, vy, ownerId }) => ({
+        id,
+        x,
+        y,
+        vx,
+        vy,
+        ownerId,
+      })),
     });
+  }
+
+  private tickProjectiles() {
+    for (const [id, p] of this.projectiles) {
+      p.age += DT;
+      p.x += p.vx * DT;
+      p.y += p.vy * DT;
+
+      if (p.x - PROJECTILE_RADIUS < 0) {
+        p.x = PROJECTILE_RADIUS;
+        p.vx = Math.abs(p.vx);
+      }
+      if (p.x + PROJECTILE_RADIUS > WORLD_W) {
+        p.x = WORLD_W - PROJECTILE_RADIUS;
+        p.vx = -Math.abs(p.vx);
+      }
+      if (p.y - PROJECTILE_RADIUS < 0) {
+        p.y = PROJECTILE_RADIUS;
+        p.vy = Math.abs(p.vy);
+      }
+      if (p.y + PROJECTILE_RADIUS > WORLD_H) {
+        p.y = WORLD_H - PROJECTILE_RADIUS;
+        p.vy = -Math.abs(p.vy);
+      }
+
+      if (p.age >= PROJECTILE_LIFETIME) {
+        this.projectiles.delete(id);
+        continue;
+      }
+
+      for (const [playerId, player] of this.players) {
+        if (playerId === p.ownerId) continue;
+        if (testHit(p.x, p.y, player.x, player.y)) {
+          this.projectiles.delete(id);
+          this.broadcast({
+            type: 'player_hit',
+            targetId: playerId,
+            shooterId: p.ownerId,
+            projectileId: id,
+          });
+          break;
+        }
+      }
+    }
   }
 
   private resolveCollisions() {
@@ -86,10 +173,10 @@ export class GameRoom {
 
   private processInputs() {
     for (const player of this.players.values()) {
-      if (player.keys.includes('w')) player.y -= SPEED;
-      if (player.keys.includes('s')) player.y += SPEED;
-      if (player.keys.includes('a')) player.x -= SPEED;
-      if (player.keys.includes('d')) player.x += SPEED;
+      if (player.keys.includes('w')) player.y -= MOVE_SPEED;
+      if (player.keys.includes('s')) player.y += MOVE_SPEED;
+      if (player.keys.includes('a')) player.x -= MOVE_SPEED;
+      if (player.keys.includes('d')) player.x += MOVE_SPEED;
 
       player.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, player.x));
       player.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, player.y));

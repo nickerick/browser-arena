@@ -1,4 +1,5 @@
 import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED } from '@browser-arena/shared';
+import { drawHitFlash } from '../fx/hitFlash';
 import { Sprite } from '../sprites/Sprite';
 import { PLAYER_SPRITE_CONFIG } from '../sprites/player';
 import type { InputState } from '../InputHandler';
@@ -12,9 +13,14 @@ export class Player {
   dirX = 0;
   dirY = -1;
 
+  /** Whether the fire key was held on the previous frame, used to detect the leading edge of a press. */
   private prevSpaceDown = false;
+  /** Set to true for exactly one frame when the fire key is first pressed. Read via the fireIntent getter. */
   private _fireIntent = false;
+  /** Animated sprite sheet for the player character. */
   private sprite: Sprite;
+  /** Seconds remaining on the hit flash overlay. Counts down from 0.3 to 0 after taking damage. */
+  private hitFlashTime = 0;
 
   constructor(x: number, y: number) {
     this.x = x;
@@ -27,26 +33,37 @@ export class Player {
     return this._fireIntent;
   }
 
-  /**
-   * Applies input to movement and sprite animation, and detects fire intent.
-   * Call once per frame before reading fireIntent.
-   */
-  update(dt: number, { dx, dy, moving, fire }: InputState) {
+  takeDamage() {
+    this.hitFlashTime = 0.3;
+  }
+
+  /** Advance player state one frame. */
+  update(dt: number, { moveX, moveY, moving, fire }: InputState) {
+    if (this.hitFlashTime > 0) this.hitFlashTime -= dt;
+
     if (moving) {
-      const len = Math.sqrt(dx * dx + dy * dy);
-      this.dirX = dx / len;
-      this.dirY = dy / len;
+      // normalize direction and keep it as the fire direction when the player stops
+      const len = Math.sqrt(moveX * moveX + moveY * moveY);
+      this.dirX = moveX / len;
+      this.dirY = moveY / len;
       this.sprite.setFacing(
-        Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down'
+        Math.abs(moveX) >= Math.abs(moveY)
+          ? moveX < 0
+            ? 'left'
+            : 'right'
+          : moveY < 0
+            ? 'up'
+            : 'down'
       );
     }
 
     this.sprite.update(dt, moving);
 
     const speed = PLAYER_SPEED * dt;
-    this.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, this.x + dx * speed));
-    this.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, this.y + dy * speed));
+    this.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, this.x + moveX * speed));
+    this.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, this.y + moveY * speed));
 
+    // leading-edge detection — true only on the frame the key is first pressed
     this._fireIntent = fire && !this.prevSpaceDown;
     this.prevSpaceDown = fire;
   }
@@ -85,6 +102,7 @@ export class Player {
       ctx.fillStyle = '#4ecca3';
       drawHeart(ctx, this.x, this.y);
     }
+    drawHitFlash(ctx, this.x, this.y, PLAYER_RADIUS, this.hitFlashTime / 0.3);
     ctx.fillStyle = '#fff';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
