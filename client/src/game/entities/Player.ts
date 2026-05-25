@@ -47,7 +47,13 @@ export class Player {
       this.dirX = moveX / len;
       this.dirY = moveY / len;
       this.sprite.setFacing(
-        Math.abs(moveX) >= Math.abs(moveY) ? (moveX < 0 ? 'left' : 'right') : moveY < 0 ? 'up' : 'down'
+        Math.abs(moveX) >= Math.abs(moveY)
+          ? moveX < 0
+            ? 'left'
+            : 'right'
+          : moveY < 0
+            ? 'up'
+            : 'down'
       );
     }
 

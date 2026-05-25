@@ -13,6 +13,7 @@ export interface InputState {
   fire: boolean;
 }
 
+/** Reads raw keyboard events and normalizes them into an InputState each frame. */
 export class InputHandler {
   private keys = new Set<string>();
 

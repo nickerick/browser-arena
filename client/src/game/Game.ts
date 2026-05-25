@@ -9,19 +9,17 @@ export class Game {
   private ctx: CanvasRenderingContext2D;
   private input: InputHandler;
 
-  // network
-  private server: ServerClient;
-
-  // loop bookkeeping
-  /** Handle returned by requestAnimationFrame, used to cancel the loop on destroy. */
-  private animationFrame: number | null = null;
-  /** Timestamp of the previous frame, used to compute dt (delta time in seconds). */
-  private lastTimestamp: number | null = null;
-
   // game world
   private arena: Arena;
   private players: PlayerSystem;
   private projectiles: ProjectileSystem;
+
+  // network
+  private server: ServerClient;
+
+  // loop bookkeeping
+  private rafHandle: number | null = null; // used to cancel the render loop on destroy
+  private prevFrameTimestamp: number | null = null; // used to calculate delta time each frame
 
   constructor(canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
@@ -40,7 +38,7 @@ export class Game {
 
   /** Kicks off the render loop. Call once after the game is ready to run. */
   start() {
-    this.animationFrame = requestAnimationFrame((t) => this.loop(t));
+    this.rafHandle = requestAnimationFrame((t) => this.loop(t));
   }
 
   /**
@@ -49,14 +47,19 @@ export class Game {
    */
   private loop(timestamp: number) {
     // calculate delta time from the browser-provided timestamp
-    const dt = this.lastTimestamp !== null ? (timestamp - this.lastTimestamp) / 1000 : 0;
-    this.lastTimestamp = timestamp;
+    const dt = this.prevFrameTimestamp !== null ? (timestamp - this.prevFrameTimestamp) / 1000 : 0;
+    this.prevFrameTimestamp = timestamp;
 
     // update state
     const input = this.input.read();
     this.players.update(dt, input);
     if (this.players.local.fireIntent) {
-      this.projectiles.fire(this.players.local.x, this.players.local.y, this.players.local.dirX, this.players.local.dirY);
+      this.projectiles.fire(
+        this.players.local.x,
+        this.players.local.y,
+        this.players.local.dirX,
+        this.players.local.dirY
+      );
       this.server.sendFire(this.players.local.dirX, this.players.local.dirY);
     }
     this.projectiles.update(dt);
@@ -65,7 +68,7 @@ export class Game {
     this.server.sendInput(input);
 
     this.render();
-    this.animationFrame = requestAnimationFrame((t) => this.loop(t));
+    this.rafHandle = requestAnimationFrame((t) => this.loop(t));
   }
 
   /**
@@ -80,7 +83,7 @@ export class Game {
 
   /** Stops the render loop and tears down all event listeners and socket subscriptions. */
   destroy() {
-    if (this.animationFrame !== null) cancelAnimationFrame(this.animationFrame);
+    if (this.rafHandle !== null) cancelAnimationFrame(this.rafHandle);
     this.input.destroy();
     this.server.destroy();
   }

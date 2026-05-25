@@ -4,6 +4,13 @@ import type { ProjectileSystem } from '../systems/ProjectileSystem';
 import type { InputHandler, InputState } from '../InputHandler';
 import { socket } from '../../api/socket';
 
+/**
+ * Manages all communication between the client and server.
+ *
+ * Outbound: sends player input and events each frame.
+ * Inbound: receives server messages and routes them to the appropriate systems
+ * (PlayerSystem for position updates, ProjectileSystem for projectile state, etc).
+ */
 export class ServerClient {
   private players: PlayerSystem;
   private projectiles: ProjectileSystem;

@@ -15,6 +15,7 @@ interface SimProjectile {
   age: number;
 }
 
+/** Manages all in-flight projectile state. */
 export class ProjectileSystem {
   /** Client-predicted shots fired by the local player. */
   private local: SimProjectile[] = [];

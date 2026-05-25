@@ -3,6 +3,7 @@ import { Player } from '../entities/Player';
 import { RemotePlayer } from '../entities/RemotePlayer';
 import type { InputState } from '../InputHandler';
 
+/** Manages local and remote player state. */
 export class PlayerSystem {
   /** The local player controlled by this client. */
   readonly local: Player;
@@ -25,7 +26,11 @@ export class PlayerSystem {
   }
 
   /** Apply a server state update — reconcile local player and sync remote players. */
-  applyServerUpdate(players: { id: string; x: number; y: number }[], myId: string, isMoving: boolean) {
+  applyServerUpdate(
+    players: { id: string; x: number; y: number }[],
+    myId: string,
+    isMoving: boolean
+  ) {
     const me = players.find((p) => p.id === myId);
     if (me) this.local.reconcile(me.x, me.y, isMoving);
 
