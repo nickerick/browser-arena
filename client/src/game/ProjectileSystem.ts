@@ -23,10 +23,22 @@ export class ProjectileSystem {
       p.x += p.vx * dt;
       p.y += p.vy * dt;
 
-      if (p.x - RADIUS < 0) { p.x = RADIUS; p.vx = Math.abs(p.vx); }
-      if (p.x + RADIUS > worldW) { p.x = worldW - RADIUS; p.vx = -Math.abs(p.vx); }
-      if (p.y - RADIUS < 0) { p.y = RADIUS; p.vy = Math.abs(p.vy); }
-      if (p.y + RADIUS > worldH) { p.y = worldH - RADIUS; p.vy = -Math.abs(p.vy); }
+      if (p.x - RADIUS < 0) {
+        p.x = RADIUS;
+        p.vx = Math.abs(p.vx);
+      }
+      if (p.x + RADIUS > worldW) {
+        p.x = worldW - RADIUS;
+        p.vx = -Math.abs(p.vx);
+      }
+      if (p.y - RADIUS < 0) {
+        p.y = RADIUS;
+        p.vy = Math.abs(p.vy);
+      }
+      if (p.y + RADIUS > worldH) {
+        p.y = worldH - RADIUS;
+        p.vy = -Math.abs(p.vy);
+      }
     }
     this.projectiles = this.projectiles.filter((p) => p.age < LIFETIME);
   }

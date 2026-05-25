@@ -22,7 +22,9 @@ export class Sprite {
     this.facing = config.defaultFacing;
     const img = new Image();
     img.src = config.src;
-    img.onload = () => { this.image = img; };
+    img.onload = () => {
+      this.image = img;
+    };
   }
 
   setFacing(facing: string) {
@@ -59,12 +61,26 @@ export class Sprite {
       ctx.scale(-1, 1);
       ctx.drawImage(this.image, sx, sy, frameW, frameH, -frameW / 2, 0, frameW, frameH);
     } else {
-      ctx.drawImage(this.image, sx, sy, frameW, frameH, x - frameW / 2, y - frameH / 2, frameW, frameH);
+      ctx.drawImage(
+        this.image,
+        sx,
+        sy,
+        frameW,
+        frameH,
+        x - frameW / 2,
+        y - frameH / 2,
+        frameW,
+        frameH
+      );
     }
     ctx.restore();
     return true;
   }
 
-  get halfH() { return this.config.frameH / 2; }
-  get halfW() { return this.config.frameW / 2; }
+  get halfH() {
+    return this.config.frameH / 2;
+  }
+  get halfW() {
+    return this.config.frameW / 2;
+  }
 }

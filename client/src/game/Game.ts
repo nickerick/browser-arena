@@ -1,14 +1,11 @@
 import type { ServerMessage } from '@browser-arena/shared';
+import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED, TICK_RATE } from '@browser-arena/shared';
 import { InputHandler, type InputState } from './InputHandler';
 import { Sprite } from './Sprite';
 import { ProjectileSystem } from './ProjectileSystem';
 import { socket } from '../api/socket';
 
-const RADIUS = 20;
-const SPEED_PPS = 400;
-const WORLD_W = 800;
-const WORLD_H = 500;
-const SERVER_TICK_MS = 1000 / 20;
+const SERVER_TICK_MS = 1000 / TICK_RATE;
 
 const PLAYER_SPRITE_CONFIG = {
   src: '/player.png',
@@ -147,9 +144,9 @@ export class Game {
 
     this.sprite.update(dt, moving);
 
-    const speed = SPEED_PPS * dt;
-    this.myX = Math.max(RADIUS, Math.min(WORLD_W - RADIUS, this.myX + dx * speed));
-    this.myY = Math.max(RADIUS, Math.min(WORLD_H - RADIUS, this.myY + dy * speed));
+    const speed = PLAYER_SPEED * dt;
+    this.myX = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, this.myX + dx * speed));
+    this.myY = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, this.myY + dy * speed));
   }
 
   private handleFire({ fire }: InputState) {
@@ -170,7 +167,7 @@ export class Game {
 
   private drawHeart(x: number, y: number) {
     const { ctx } = this;
-    const r = RADIUS;
+    const r = PLAYER_RADIUS;
     ctx.save();
     ctx.translate(x, y);
     ctx.beginPath();
@@ -213,7 +210,7 @@ export class Game {
       ctx.fillStyle = '#fff';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('Babbi', x, y - RADIUS - 6);
+      ctx.fillText('Babbi', x, y - PLAYER_RADIUS - 6);
     }
   }
 
