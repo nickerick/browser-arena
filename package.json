@@ -13,7 +13,10 @@
     "build:client": "npm run build -w client",
     "build:server": "npm run build -w server",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "docker:build": "docker build -t browser-arena .",
+    "docker:run": "docker run --rm -p 3001:3001 browser-arena",
+    "docker:start": "npm run docker:build && npm run docker:run"
   },
   "devDependencies": {
     "prettier": "^3.8.3"
