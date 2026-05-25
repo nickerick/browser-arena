@@ -1,5 +1,5 @@
 import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED } from '@browser-arena/shared';
-import { Sprite } from '../Sprite';
+import { Sprite } from '../sprites/Sprite';
 import { PLAYER_SPRITE_CONFIG } from '../sprites/player';
 import type { InputState } from '../InputHandler';
 
@@ -23,7 +23,9 @@ export class Player {
   }
 
   /** True for exactly one frame when the fire key is first pressed. */
-  get fireIntent() { return this._fireIntent; }
+  get fireIntent() {
+    return this._fireIntent;
+  }
 
   /**
    * Applies input to movement and sprite animation, and detects fire intent.
@@ -35,9 +37,7 @@ export class Player {
       this.dirX = dx / len;
       this.dirY = dy / len;
       this.sprite.setFacing(
-        Math.abs(dx) >= Math.abs(dy)
-          ? dx < 0 ? 'left' : 'right'
-          : dy < 0 ? 'up' : 'down'
+        Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down'
       );
     }
 

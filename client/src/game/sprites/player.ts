@@ -1,4 +1,4 @@
-import type { SpriteConfig } from '../Sprite';
+import type { SpriteConfig } from './Sprite';
 
 export const PLAYER_SPRITE_CONFIG: SpriteConfig = {
   src: '/player.png',
