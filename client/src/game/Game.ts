@@ -41,26 +41,39 @@ export class Game {
     this.ctx.scale(dpr, dpr);
   }
 
+  /** Kicks off the render loop. Call once after the game is ready to run. */
   start() {
     this.animationFrame = requestAnimationFrame((t) => this.loop(t));
   }
 
+  /**
+   * Core update step, called once per frame by requestAnimationFrame.
+   * Computes and advances game state and then hands off to render().
+   */
   private loop(timestamp: number) {
+    // calculate delta time from the browser-provided timestamp
     const dt = this.lastTimestamp !== null ? (timestamp - this.lastTimestamp) / 1000 : 0;
     this.lastTimestamp = timestamp;
 
+    // update state
     const input = this.input.read();
     this.player.update(dt, input);
     if (this.player.fireIntent) {
       this.projectiles.fire(this.player.x, this.player.y, this.player.dirX, this.player.dirY);
       this.server.sendFire(this.player.dirX, this.player.dirY);
     }
-    this.projectiles.tick(dt);
+    this.projectiles.update(dt);
+
+    // flush input to server
     this.server.sendInput(input);
+
     this.render();
     this.animationFrame = requestAnimationFrame((t) => this.loop(t));
   }
 
+  /**
+   * Read-only draw step — takes a snapshot of current game state and paints a frame.
+   */
   private render() {
     const { ctx } = this;
     this.arena.draw(ctx);
@@ -70,6 +83,7 @@ export class Game {
     for (const remote of this.remotePlayers.values()) remote.draw(ctx);
   }
 
+  /** Stops the render loop and tears down all event listeners and socket subscriptions. */
   destroy() {
     if (this.animationFrame !== null) cancelAnimationFrame(this.animationFrame);
     this.input.destroy();

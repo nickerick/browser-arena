@@ -17,7 +17,7 @@ export class ServerClient {
     player: Player,
     remotePlayers: Map<string, RemotePlayer>,
     input: InputHandler,
-    projectiles: ProjectileSystem,
+    projectiles: ProjectileSystem
   ) {
     this.player = player;
     this.remotePlayers = remotePlayers;

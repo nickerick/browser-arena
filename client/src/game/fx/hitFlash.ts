@@ -7,7 +7,7 @@ export function drawHitFlash(
   x: number,
   y: number,
   radius: number,
-  t: number,
+  t: number
 ) {
   if (t <= 0) return;
   ctx.save();

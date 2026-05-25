@@ -1,5 +1,11 @@
 import type { ProjectileState } from '@browser-arena/shared';
-import { PROJECTILE_RADIUS, PROJECTILE_SPEED, PROJECTILE_LIFETIME, WORLD_W, WORLD_H } from '@browser-arena/shared';
+import {
+  PROJECTILE_RADIUS,
+  PROJECTILE_SPEED,
+  PROJECTILE_LIFETIME,
+  WORLD_W,
+  WORLD_H,
+} from '@browser-arena/shared';
 
 interface SimProjectile {
   x: number;
@@ -20,7 +26,7 @@ export class ProjectileSystem {
   }
 
   /** Advance all simulations one frame. Call once per render loop. */
-  tick(dt: number) {
+  update(dt: number) {
     for (const p of this.local) advance(p, dt);
     this.local = this.local.filter((p) => p.age < PROJECTILE_LIFETIME);
 
@@ -93,8 +99,20 @@ function advance(p: SimProjectile, dt: number) {
   p.x += p.vx * dt;
   p.y += p.vy * dt;
 
-  if (p.x - PROJECTILE_RADIUS < 0) { p.x = PROJECTILE_RADIUS; p.vx = Math.abs(p.vx); }
-  if (p.x + PROJECTILE_RADIUS > WORLD_W) { p.x = WORLD_W - PROJECTILE_RADIUS; p.vx = -Math.abs(p.vx); }
-  if (p.y - PROJECTILE_RADIUS < 0) { p.y = PROJECTILE_RADIUS; p.vy = Math.abs(p.vy); }
-  if (p.y + PROJECTILE_RADIUS > WORLD_H) { p.y = WORLD_H - PROJECTILE_RADIUS; p.vy = -Math.abs(p.vy); }
+  if (p.x - PROJECTILE_RADIUS < 0) {
+    p.x = PROJECTILE_RADIUS;
+    p.vx = Math.abs(p.vx);
+  }
+  if (p.x + PROJECTILE_RADIUS > WORLD_W) {
+    p.x = WORLD_W - PROJECTILE_RADIUS;
+    p.vx = -Math.abs(p.vx);
+  }
+  if (p.y - PROJECTILE_RADIUS < 0) {
+    p.y = PROJECTILE_RADIUS;
+    p.vy = Math.abs(p.vy);
+  }
+  if (p.y + PROJECTILE_RADIUS > WORLD_H) {
+    p.y = WORLD_H - PROJECTILE_RADIUS;
+    p.vy = -Math.abs(p.vy);
+  }
 }

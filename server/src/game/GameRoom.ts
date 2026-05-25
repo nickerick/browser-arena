@@ -107,10 +107,22 @@ export class GameRoom {
       p.x += p.vx * DT;
       p.y += p.vy * DT;
 
-      if (p.x - PROJECTILE_RADIUS < 0) { p.x = PROJECTILE_RADIUS; p.vx = Math.abs(p.vx); }
-      if (p.x + PROJECTILE_RADIUS > WORLD_W) { p.x = WORLD_W - PROJECTILE_RADIUS; p.vx = -Math.abs(p.vx); }
-      if (p.y - PROJECTILE_RADIUS < 0) { p.y = PROJECTILE_RADIUS; p.vy = Math.abs(p.vy); }
-      if (p.y + PROJECTILE_RADIUS > WORLD_H) { p.y = WORLD_H - PROJECTILE_RADIUS; p.vy = -Math.abs(p.vy); }
+      if (p.x - PROJECTILE_RADIUS < 0) {
+        p.x = PROJECTILE_RADIUS;
+        p.vx = Math.abs(p.vx);
+      }
+      if (p.x + PROJECTILE_RADIUS > WORLD_W) {
+        p.x = WORLD_W - PROJECTILE_RADIUS;
+        p.vx = -Math.abs(p.vx);
+      }
+      if (p.y - PROJECTILE_RADIUS < 0) {
+        p.y = PROJECTILE_RADIUS;
+        p.vy = Math.abs(p.vy);
+      }
+      if (p.y + PROJECTILE_RADIUS > WORLD_H) {
+        p.y = WORLD_H - PROJECTILE_RADIUS;
+        p.vy = -Math.abs(p.vy);
+      }
 
       if (p.age >= PROJECTILE_LIFETIME) {
         this.projectiles.delete(id);
@@ -121,7 +133,12 @@ export class GameRoom {
         if (playerId === p.ownerId) continue;
         if (testHit(p.x, p.y, player.x, player.y)) {
           this.projectiles.delete(id);
-          this.broadcast({ type: 'player_hit', targetId: playerId, shooterId: p.ownerId, projectileId: id });
+          this.broadcast({
+            type: 'player_hit',
+            targetId: playerId,
+            shooterId: p.ownerId,
+            projectileId: id,
+          });
           break;
         }
       }

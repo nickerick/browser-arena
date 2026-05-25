@@ -13,9 +13,13 @@ export class Player {
   dirX = 0;
   dirY = -1;
 
+  /** Whether the fire key was held on the previous frame, used to detect the leading edge of a press. */
   private prevSpaceDown = false;
+  /** Set to true for exactly one frame when the fire key is first pressed. Read via the fireIntent getter. */
   private _fireIntent = false;
+  /** Animated sprite sheet for the player character. */
   private sprite: Sprite;
+  /** Seconds remaining on the hit flash overlay. Counts down from 0.3 to 0 after taking damage. */
   private hitFlashTime = 0;
 
   constructor(x: number, y: number) {
@@ -29,13 +33,14 @@ export class Player {
     return this._fireIntent;
   }
 
+  takeDamage() {
+    this.hitFlashTime = 0.3;
+  }
+
   /**
    * Applies input to movement and sprite animation, and detects fire intent.
    * Call once per frame before reading fireIntent.
    */
-  takeDamage() {
-    this.hitFlashTime = 0.3;
-  }
 
   update(dt: number, { dx, dy, moving, fire }: InputState) {
     if (this.hitFlashTime > 0) this.hitFlashTime -= dt;
