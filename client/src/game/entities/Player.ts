@@ -37,28 +37,27 @@ export class Player {
     this.hitFlashTime = 0.3;
   }
 
-  /**
-   * Applies input to movement and sprite animation, and detects fire intent.
-   * Call once per frame before reading fireIntent.
-   */
-
-  update(dt: number, { dx, dy, moving, fire }: InputState) {
+  /** Advance player state one frame. */
+  update(dt: number, { moveX, moveY, moving, fire }: InputState) {
     if (this.hitFlashTime > 0) this.hitFlashTime -= dt;
+
     if (moving) {
-      const len = Math.sqrt(dx * dx + dy * dy);
-      this.dirX = dx / len;
-      this.dirY = dy / len;
+      // normalize direction and keep it as the fire direction when the player stops
+      const len = Math.sqrt(moveX * moveX + moveY * moveY);
+      this.dirX = moveX / len;
+      this.dirY = moveY / len;
       this.sprite.setFacing(
-        Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down'
+        Math.abs(moveX) >= Math.abs(moveY) ? (moveX < 0 ? 'left' : 'right') : moveY < 0 ? 'up' : 'down'
       );
     }
 
     this.sprite.update(dt, moving);
 
     const speed = PLAYER_SPEED * dt;
-    this.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, this.x + dx * speed));
-    this.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, this.y + dy * speed));
+    this.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, this.x + moveX * speed));
+    this.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, this.y + moveY * speed));
 
+    // leading-edge detection — true only on the frame the key is first pressed
     this._fireIntent = fire && !this.prevSpaceDown;
     this.prevSpaceDown = fire;
   }

@@ -39,12 +39,12 @@ export class ServerClient {
     return !!socket.playerId;
   }
 
-  sendInput({ dx, dy }: InputState) {
+  sendInput({ moveX, moveY }: InputState) {
     const keys: string[] = [];
-    if (dy < 0) keys.push('w');
-    if (dy > 0) keys.push('s');
-    if (dx < 0) keys.push('a');
-    if (dx > 0) keys.push('d');
+    if (moveY < 0) keys.push('w');
+    if (moveY > 0) keys.push('s');
+    if (moveX < 0) keys.push('a');
+    if (moveX > 0) keys.push('d');
     socket.send({ type: 'input', keys });
   }
 

@@ -7,24 +7,31 @@ import { Arena } from './world/Arena';
 import { ServerClient } from './network/ServerClient';
 
 export class Game {
+  // Rendering + Input
   /** 2D drawing context for the canvas. */
   private ctx: CanvasRenderingContext2D;
   /** Reads keyboard state each frame. */
   private input: InputHandler;
+
+  // Network
+  /** Routes server messages to the appropriate entities. */
+  private server: ServerClient;
+
+  // Loop Bookkeeping
+  /** Handle returned by requestAnimationFrame, used to cancel the loop on destroy. */
+  private animationFrame: number | null = null;
+  /** Timestamp of the previous frame, used to compute dt (delta time in seconds). */
+  private lastTimestamp: number | null = null;
+
+  // Game World
+  /** Current map — responsible for drawing the background. */
+  private arena: Arena;
   /** The local player. */
   private player: Player;
   /** Other connected players, keyed by player ID. */
   private remotePlayers = new Map<string, RemotePlayer>();
   /** Manages all in-flight projectiles. */
   private projectiles: ProjectileSystem;
-  /** Current map — responsible for drawing the background. */
-  private arena: Arena;
-  /** Routes server messages to the appropriate entities. */
-  private server: ServerClient;
-  /** Handle returned by requestAnimationFrame, used to cancel the loop on destroy. */
-  private animationFrame: number | null = null;
-  /** Timestamp of the previous frame, used to compute dt (delta time in seconds). */
-  private lastTimestamp: number | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
