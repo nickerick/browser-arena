@@ -1,20 +1,28 @@
-import type { ServerMessage, PlayerState } from '@browser-arena/shared';
+import type { ServerMessage, PlayerState, ProjectileState } from '@browser-arena/shared';
 import { WORLD_W, WORLD_H } from '@browser-arena/shared';
 import type { Player } from '../entities/Player';
 import { RemotePlayer } from '../entities/RemotePlayer';
 import type { InputHandler, InputState } from '../InputHandler';
+import type { ProjectileSystem } from '../systems/ProjectileSystem';
 import { socket } from '../../api/socket';
 
 export class ServerClient {
   private player: Player;
   private remotePlayers: Map<string, RemotePlayer>;
   private input: InputHandler;
+  private projectiles: ProjectileSystem;
   private unsubscribe: (() => void) | null = null;
 
-  constructor(player: Player, remotePlayers: Map<string, RemotePlayer>, input: InputHandler) {
+  constructor(
+    player: Player,
+    remotePlayers: Map<string, RemotePlayer>,
+    input: InputHandler,
+    projectiles: ProjectileSystem,
+  ) {
     this.player = player;
     this.remotePlayers = remotePlayers;
     this.input = input;
+    this.projectiles = projectiles;
   }
 
   connect() {
@@ -40,16 +48,28 @@ export class ServerClient {
     socket.send({ type: 'input', keys });
   }
 
+  sendFire(dirX: number, dirY: number) {
+    socket.send({ type: 'fire', dirX, dirY });
+  }
+
   handle(msg: ServerMessage) {
     if (msg.type === 'state_update') {
-      this.applyStateUpdate(msg.players);
+      this.applyStateUpdate(msg.players, msg.projectiles);
     } else if (msg.type === 'init') {
       this.player.reset(WORLD_W / 2, WORLD_H / 2);
       this.remotePlayers.clear();
+    } else if (msg.type === 'player_hit') {
+      const myId = socket.playerId ?? '';
+      this.projectiles.removeHit(msg.projectileId, msg.shooterId, myId);
+      if (msg.targetId === myId) {
+        this.player.takeDamage();
+      } else {
+        this.remotePlayers.get(msg.targetId)?.takeDamage();
+      }
     }
   }
 
-  private applyStateUpdate(players: PlayerState[]) {
+  private applyStateUpdate(players: PlayerState[], projectiles: ProjectileState[]) {
     const myId = socket.playerId;
 
     for (const p of players) {
@@ -71,5 +91,7 @@ export class ServerClient {
     if (me) {
       this.player.reconcile(me.x, me.y, this.input.read().moving);
     }
+
+    this.projectiles.updateRemote(projectiles, myId ?? '');
   }
 }

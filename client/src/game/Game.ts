@@ -32,7 +32,7 @@ export class Game {
     this.player = new Player(WORLD_W / 2, WORLD_H / 2);
     this.projectiles = new ProjectileSystem();
     this.arena = new Arena();
-    this.server = new ServerClient(this.player, this.remotePlayers, this.input);
+    this.server = new ServerClient(this.player, this.remotePlayers, this.input, this.projectiles);
     this.server.connect();
 
     const dpr = window.devicePixelRatio || 1;
@@ -53,8 +53,9 @@ export class Game {
     this.player.update(dt, input);
     if (this.player.fireIntent) {
       this.projectiles.fire(this.player.x, this.player.y, this.player.dirX, this.player.dirY);
+      this.server.sendFire(this.player.dirX, this.player.dirY);
     }
-    this.projectiles.update(dt);
+    this.projectiles.tick(dt);
     this.server.sendInput(input);
     this.render();
     this.animationFrame = requestAnimationFrame((t) => this.loop(t));

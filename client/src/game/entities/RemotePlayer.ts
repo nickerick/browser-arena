@@ -1,4 +1,5 @@
 import { TICK_RATE, PLAYER_RADIUS } from '@browser-arena/shared';
+import { drawHitFlash } from '../fx/hitFlash';
 
 const SERVER_TICK_MS = 1000 / TICK_RATE;
 
@@ -12,6 +13,8 @@ export class RemotePlayer {
   /** performance.now() timestamp of the last server update, used for interpolation. */
   private lastUpdateAt: number;
 
+  private hitAt: number | null = null;
+
   constructor(id: string, x: number, y: number) {
     this.id = id;
     this.fromX = x;
@@ -19,6 +22,10 @@ export class RemotePlayer {
     this.toX = x;
     this.toY = y;
     this.lastUpdateAt = performance.now();
+  }
+
+  takeDamage() {
+    this.hitAt = performance.now();
   }
 
   /** Called when the server sends a new authoritative position for this player. */
@@ -44,6 +51,15 @@ export class RemotePlayer {
     const { x, y } = this.pos;
     ctx.fillStyle = '#ff69b4';
     drawHeart(ctx, x, y);
+    if (this.hitAt !== null) {
+      const elapsed = performance.now() - this.hitAt;
+      const HIT_FLASH_MS = 300;
+      if (elapsed < HIT_FLASH_MS) {
+        drawHitFlash(ctx, x, y, PLAYER_RADIUS, 1 - elapsed / HIT_FLASH_MS);
+      } else {
+        this.hitAt = null;
+      }
+    }
     ctx.fillStyle = '#fff';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';

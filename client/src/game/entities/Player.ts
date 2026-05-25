@@ -1,4 +1,5 @@
 import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED } from '@browser-arena/shared';
+import { drawHitFlash } from '../fx/hitFlash';
 import { Sprite } from '../sprites/Sprite';
 import { PLAYER_SPRITE_CONFIG } from '../sprites/player';
 import type { InputState } from '../InputHandler';
@@ -15,6 +16,7 @@ export class Player {
   private prevSpaceDown = false;
   private _fireIntent = false;
   private sprite: Sprite;
+  private hitFlashTime = 0;
 
   constructor(x: number, y: number) {
     this.x = x;
@@ -31,7 +33,12 @@ export class Player {
    * Applies input to movement and sprite animation, and detects fire intent.
    * Call once per frame before reading fireIntent.
    */
+  takeDamage() {
+    this.hitFlashTime = 0.3;
+  }
+
   update(dt: number, { dx, dy, moving, fire }: InputState) {
+    if (this.hitFlashTime > 0) this.hitFlashTime -= dt;
     if (moving) {
       const len = Math.sqrt(dx * dx + dy * dy);
       this.dirX = dx / len;
@@ -85,6 +92,7 @@ export class Player {
       ctx.fillStyle = '#4ecca3';
       drawHeart(ctx, this.x, this.y);
     }
+    drawHitFlash(ctx, this.x, this.y, PLAYER_RADIUS, this.hitFlashTime / 0.3);
     ctx.fillStyle = '#fff';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
