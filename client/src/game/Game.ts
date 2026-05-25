@@ -23,10 +23,6 @@ export class Game {
   private server: ServerClient;
   /** Handle returned by requestAnimationFrame, used to cancel the loop on destroy. */
   private animationFrame: number | null = null;
-  /** Canvas logical width in CSS pixels (not scaled by devicePixelRatio). */
-  private w: number;
-  /** Canvas logical height in CSS pixels (not scaled by devicePixelRatio). */
-  private h: number;
   /** Timestamp of the previous frame, used to compute dt (delta time in seconds). */
   private lastTimestamp: number | null = null;
 
@@ -40,10 +36,8 @@ export class Game {
     this.server.connect();
 
     const dpr = window.devicePixelRatio || 1;
-    this.w = canvas.clientWidth;
-    this.h = canvas.clientHeight;
-    canvas.width = this.w * dpr;
-    canvas.height = this.h * dpr;
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
     this.ctx.scale(dpr, dpr);
   }
 
@@ -60,7 +54,7 @@ export class Game {
     if (this.player.fireIntent) {
       this.projectiles.fire(this.player.x, this.player.y, this.player.dirX, this.player.dirY);
     }
-    this.projectiles.update(dt, WORLD_W, WORLD_H);
+    this.projectiles.update(dt);
     this.server.sendInput(input);
     this.render();
     this.animationFrame = requestAnimationFrame((t) => this.loop(t));

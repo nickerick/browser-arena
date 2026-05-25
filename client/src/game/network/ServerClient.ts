@@ -27,7 +27,9 @@ export class ServerClient {
   }
 
   /** True once the server has assigned us a player ID. */
-  get isConnected() { return !!socket.playerId; }
+  get isConnected() {
+    return !!socket.playerId;
+  }
 
   sendInput({ dx, dy }: InputState) {
     const keys: string[] = [];
