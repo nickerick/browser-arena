@@ -21,18 +21,17 @@ export class ProjectileSystem {
   private local: SimProjectile[] = [];
   /** Server-confirmed remote projectiles, simulated locally between ticks. */
   private remote = new Map<string, SimProjectile>();
+  /** Latest server projectile snapshot, stored by setServerState() and applied in update(). */
+  private pendingServerState: { projectiles: ProjectileState[]; myId: string } | null = null;
 
   /** Spawn a new client-predicted projectile from the local player. */
   fire(x: number, y: number, dirX: number, dirY: number) {
     this.local.push({ x, y, vx: dirX * PROJECTILE_SPEED, vy: dirY * PROJECTILE_SPEED, age: 0 });
   }
 
-  /** Advance all projectile state one frame. */
-  update(dt: number) {
-    for (const p of this.local) advance(p, dt);
-    this.local = this.local.filter((p) => p.age < PROJECTILE_LIFETIME);
-
-    for (const p of this.remote.values()) advance(p, dt);
+  /** Store the latest authoritative state from the server. Applied during the next update(). */
+  setServerState(projectiles: ProjectileState[], myId: string) {
+    this.pendingServerState = { projectiles, myId };
   }
 
   /** Immediately remove a projectile that the server confirmed as a hit. */
@@ -41,12 +40,38 @@ export class ProjectileSystem {
     if (shooterId === myId) this.local.shift();
   }
 
-  /**
-   * Reconcile tracked remote projectiles against server state.
-   * New projectiles start simulating immediately; existing ones nudge toward
-   * server position to correct drift; gone ones are removed.
-   */
-  updateRemote(serverProjectiles: ProjectileState[], myId: string) {
+  /** Advance all projectile state one frame. */
+  update(dt: number) {
+    if (this.pendingServerState !== null) {
+      this.reconcileRemote(this.pendingServerState.projectiles, this.pendingServerState.myId);
+      this.pendingServerState = null;
+    }
+
+    for (const p of this.local) advance(p, dt);
+    this.local = this.local.filter((p) => p.age < PROJECTILE_LIFETIME);
+
+    for (const p of this.remote.values()) advance(p, dt);
+  }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    ctx.shadowColor = '#ffe066';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#ffe066';
+    for (const p of this.local) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, PROJECTILE_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (const p of this.remote.values()) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, PROJECTILE_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  private reconcileRemote(serverProjectiles: ProjectileState[], myId: string) {
     const serverIds = new Set<string>();
 
     for (const sp of serverProjectiles) {
@@ -76,24 +101,6 @@ export class ProjectileSystem {
       if (!serverIds.has(id)) this.remote.delete(id);
     }
   }
-
-  draw(ctx: CanvasRenderingContext2D) {
-    ctx.save();
-    ctx.shadowColor = '#ffe066';
-    ctx.shadowBlur = 10;
-    ctx.fillStyle = '#ffe066';
-    for (const p of this.local) {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, PROJECTILE_RADIUS, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    for (const p of this.remote.values()) {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, PROJECTILE_RADIUS, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
-  }
 }
 
 function advance(p: SimProjectile, dt: number) {
@@ -101,20 +108,8 @@ function advance(p: SimProjectile, dt: number) {
   p.x += p.vx * dt;
   p.y += p.vy * dt;
 
-  if (p.x - PROJECTILE_RADIUS < 0) {
-    p.x = PROJECTILE_RADIUS;
-    p.vx = Math.abs(p.vx);
-  }
-  if (p.x + PROJECTILE_RADIUS > WORLD_W) {
-    p.x = WORLD_W - PROJECTILE_RADIUS;
-    p.vx = -Math.abs(p.vx);
-  }
-  if (p.y - PROJECTILE_RADIUS < 0) {
-    p.y = PROJECTILE_RADIUS;
-    p.vy = Math.abs(p.vy);
-  }
-  if (p.y + PROJECTILE_RADIUS > WORLD_H) {
-    p.y = WORLD_H - PROJECTILE_RADIUS;
-    p.vy = -Math.abs(p.vy);
-  }
+  if (p.x - PROJECTILE_RADIUS < 0) { p.x = PROJECTILE_RADIUS; p.vx = Math.abs(p.vx); }
+  if (p.x + PROJECTILE_RADIUS > WORLD_W) { p.x = WORLD_W - PROJECTILE_RADIUS; p.vx = -Math.abs(p.vx); }
+  if (p.y - PROJECTILE_RADIUS < 0) { p.y = PROJECTILE_RADIUS; p.vy = Math.abs(p.vy); }
+  if (p.y + PROJECTILE_RADIUS > WORLD_H) { p.y = WORLD_H - PROJECTILE_RADIUS; p.vy = -Math.abs(p.vy); }
 }

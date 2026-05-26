@@ -21,6 +21,9 @@ export class Player {
   private sprite: Sprite;
   /** Seconds remaining on the hit flash overlay. Counts down from 0.3 to 0 after taking damage. */
   private hitFlashTime = 0;
+  /** Latest authoritative position received from the server. Reconciled against in update(). */
+  private serverX: number | null = null;
+  private serverY: number | null = null;
 
   constructor(x: number, y: number) {
     this.x = x;
@@ -63,27 +66,29 @@ export class Player {
     this.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, this.x + moveX * speed));
     this.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, this.y + moveY * speed));
 
+    // reconcile toward the latest server position if we have one
+    if (this.serverX !== null && this.serverY !== null) {
+      const dx = this.serverX - this.x;
+      const dy = this.serverY - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist > 80) {
+        this.x = this.serverX;
+        this.y = this.serverY;
+      } else if (dist > 4 && moving) {
+        this.x += dx * 0.2;
+        this.y += dy * 0.2;
+      }
+    }
+
     // leading-edge detection — true only on the frame the key is first pressed
     this._fireIntent = fire && !this.prevSpaceDown;
     this.prevSpaceDown = fire;
   }
 
-  /**
-   * Soft-corrects local position toward the server-authoritative position.
-   * Snaps immediately if the gap is large (e.g. teleport), otherwise nudges
-   * gently while moving to avoid visible rubberbanding when stopped.
-   */
-  reconcile(serverX: number, serverY: number, isMoving: boolean) {
-    const dx = serverX - this.x;
-    const dy = serverY - this.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > 80) {
-      this.x = serverX;
-      this.y = serverY;
-    } else if (dist > 4 && isMoving) {
-      this.x += dx * 0.2;
-      this.y += dy * 0.2;
-    }
+  /** Store the latest authoritative state from the server. Reconciled against in update(). */
+  setServerState(x: number, y: number) {
+    this.serverX = x;
+    this.serverY = y;
   }
 
   /** Resets position and state without recreating the sprite (avoids image reload). */
@@ -94,6 +99,8 @@ export class Player {
     this.dirY = -1;
     this.prevSpaceDown = false;
     this._fireIntent = false;
+    this.serverX = null;
+    this.serverY = null;
   }
 
   draw(ctx: CanvasRenderingContext2D) {

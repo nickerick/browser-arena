@@ -25,20 +25,16 @@ export class PlayerSystem {
     for (const remote of this.remote.values()) remote.draw(ctx);
   }
 
-  /** Apply a server state update — reconcile local player and sync remote players. */
-  applyServerUpdate(
-    players: { id: string; x: number; y: number }[],
-    myId: string,
-    isMoving: boolean
-  ) {
+  /** Store incoming server positions on each player entity to be reconciled in the next update(). */
+  applyServerUpdate(players: { id: string; x: number; y: number }[], myId: string) {
     const me = players.find((p) => p.id === myId);
-    if (me) this.local.reconcile(me.x, me.y, isMoving);
+    if (me) this.local.setServerState(me.x, me.y);
 
     for (const p of players) {
       if (p.id === myId) continue;
       const existing = this.remote.get(p.id);
       if (existing) {
-        existing.moveTo(p.x, p.y);
+        existing.setServerState(p.x, p.y);
       } else {
         this.remote.set(p.id, new RemotePlayer(p.id, p.x, p.y));
       }

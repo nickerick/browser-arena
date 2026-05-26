@@ -36,12 +36,12 @@ export class RemotePlayer {
     this.hitFlashTime = 0.3;
   }
 
-  /** Called when the server sends a new authoritative position for this player. */
-  moveTo(toX: number, toY: number) {
+  /** Store the latest authoritative state from the server. Applied during the next update(). */
+  setServerState(x: number, y: number) {
     this.fromX = this.x;
     this.fromY = this.y;
-    this.toX = toX;
-    this.toY = toY;
+    this.toX = x;
+    this.toY = y;
     this.lerpT = 0;
   }
 

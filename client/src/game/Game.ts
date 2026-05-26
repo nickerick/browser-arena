@@ -27,7 +27,7 @@ export class Game {
     this.arena = new Arena();
     this.players = new PlayerSystem();
     this.projectiles = new ProjectileSystem();
-    this.server = new ServerClient(this.players, this.input, this.projectiles);
+    this.server = new ServerClient(this.players, this.projectiles);
     this.server.connect();
 
     const dpr = window.devicePixelRatio || 1;
