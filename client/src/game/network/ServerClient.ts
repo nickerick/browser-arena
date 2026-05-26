@@ -56,7 +56,7 @@ export class ServerClient {
     const myId = socket.playerId ?? '';
     if (msg.type === 'state_update') {
       this.players.applyServerUpdate(msg.players, myId);
-      this.projectiles.setServerState(msg.projectiles, myId);
+      this.projectiles.applyServerUpdate(msg.projectiles, myId);
     } else if (msg.type === 'init') {
       this.players.reset();
     } else if (msg.type === 'player_hit') {
