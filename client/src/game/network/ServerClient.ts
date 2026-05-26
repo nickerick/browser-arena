@@ -16,6 +16,9 @@ export class ServerClient {
   private projectiles: ProjectileSystem;
   private input: InputHandler;
   private unsubscribe: (() => void) | null = null;
+  
+  /** Incoming server messages waiting to be applied at the top of the next frame. */
+  private queue: ServerMessage[] = [];
 
   constructor(players: PlayerSystem, input: InputHandler, projectiles: ProjectileSystem) {
     this.players = players;
@@ -24,17 +27,12 @@ export class ServerClient {
   }
 
   connect() {
-    this.unsubscribe = socket.on((msg) => this.handle(msg));
+    this.unsubscribe = socket.on((msg) => this.queue.push(msg));
   }
 
   destroy() {
     this.unsubscribe?.();
     this.unsubscribe = null;
-  }
-
-  /** True once the server has assigned us a player ID. */
-  get isConnected() {
-    return !!socket.playerId;
   }
 
   sendInput({ moveX, moveY }: InputState) {
@@ -48,6 +46,12 @@ export class ServerClient {
 
   sendFire(dirX: number, dirY: number) {
     socket.send({ type: 'fire', dirX, dirY });
+  }
+
+  /** Drains the message queue and applys all pending server updates.*/
+  flush() {
+    for (const msg of this.queue) this.handle(msg);
+    this.queue = [];
   }
 
   private handle(msg: ServerMessage) {

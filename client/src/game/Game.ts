@@ -50,6 +50,9 @@ export class Game {
     const dt = this.prevFrameTimestamp !== null ? (timestamp - this.prevFrameTimestamp) / 1000 : 0;
     this.prevFrameTimestamp = timestamp;
 
+    // apply all server messages that arrived since last frame
+    this.server.flush();
+
     // update state
     const input = this.input.read();
     this.players.update(dt, input);
