@@ -1,26 +1,23 @@
-import { PROJECTILE_RADIUS, PROJECTILE_SPEED, PROJECTILE_LIFETIME, WORLD_W, WORLD_H } from '@browser-arena/shared';
+import { PROJECTILE_RADIUS, WORLD_W, WORLD_H } from '@browser-arena/shared';
+import type { IEntity } from '../IEntity';
 
-/** A client-predicted projectile fired by the local player. No server reconciliation — pure simulation. */
-export class LocalProjectile {
+/** Abstract base class for all projectile entities. Owns shared physics and the draw contract. */
+export abstract class Projectile implements IEntity {
   x: number;
   y: number;
-  private vx: number;
-  private vy: number;
-  private age = 0;
+  protected vx: number;
+  protected vy: number;
+  protected age = 0;
 
-  constructor(x: number, y: number, dirX: number, dirY: number) {
+  constructor(x: number, y: number, vx: number, vy: number) {
     this.x = x;
     this.y = y;
-    this.vx = dirX * PROJECTILE_SPEED;
-    this.vy = dirY * PROJECTILE_SPEED;
+    this.vx = vx;
+    this.vy = vy;
   }
 
-  get expired() {
-    return this.age >= PROJECTILE_LIFETIME;
-  }
-
-  /** Advance projectile state one frame. */
-  update(dt: number) {
+  /** Advance velocity integration and wall bouncing one frame. */
+  protected advancePhysics(dt: number) {
     this.age += dt;
     this.x += this.vx * dt;
     this.y += this.vy * dt;
@@ -30,6 +27,8 @@ export class LocalProjectile {
     if (this.y - PROJECTILE_RADIUS < 0) { this.y = PROJECTILE_RADIUS; this.vy = Math.abs(this.vy); }
     if (this.y + PROJECTILE_RADIUS > WORLD_H) { this.y = WORLD_H - PROJECTILE_RADIUS; this.vy = -Math.abs(this.vy); }
   }
+
+  abstract update(dt: number): void;
 
   draw(ctx: CanvasRenderingContext2D) {
     ctx.beginPath();

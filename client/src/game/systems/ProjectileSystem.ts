@@ -1,12 +1,12 @@
 import type { ProjectileState } from '@browser-arena/shared';
 
-import { LocalProjectile } from '../entities/LocalProjectile';
-import { Projectile } from '../entities/Projectile';
+import { LocalProjectile } from '../entities/projectile/LocalProjectile';
+import { RemoteProjectile } from '../entities/projectile/RemoteProjectile';
 
 /** Manages all in-flight projectile state. */
 export class ProjectileSystem {
   private local: LocalProjectile[] = [];
-  private remote = new Map<string, Projectile>();
+  private remote = new Map<string, RemoteProjectile>();
 
   /** Spawn a new client-predicted projectile from the local player. */
   fire(x: number, y: number, dirX: number, dirY: number) {
@@ -24,7 +24,7 @@ export class ProjectileSystem {
       if (existing) {
         existing.setServerState(sp.x, sp.y, sp.vx, sp.vy);
       } else {
-        this.remote.set(sp.id, new Projectile(sp.x, sp.y, sp.vx, sp.vy));
+        this.remote.set(sp.id, new RemoteProjectile(sp.x, sp.y, sp.vx, sp.vy));
       }
     }
 

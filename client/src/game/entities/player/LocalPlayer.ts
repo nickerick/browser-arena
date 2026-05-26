@@ -1,15 +1,13 @@
 import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED } from '@browser-arena/shared';
-import { drawHitFlash } from '../fx/hitFlash';
-import { Sprite } from '../sprites/Sprite';
-import { PLAYER_SPRITE_CONFIG } from '../sprites/player';
-import type { InputState } from '../InputHandler';
+import { drawHitFlash } from '../../fx/hitFlash';
+import { Sprite } from '../../sprites/Sprite';
+import { PLAYER_SPRITE_CONFIG } from '../../sprites/player';
+import type { InputState } from '../../InputHandler';
+import { Player } from './Player';
 
-export class Player {
-  /** World-space position. */
-  x: number;
-  y: number;
-
-  /** Normalized last movement direction, retained as the fire direction when idle. */
+/** The local player entity, controlled by keyboard input with client-side prediction. */
+export class LocalPlayer extends Player {
+  /** Normalized last movement direction, retained as the fire direction when the player is idle. */
   dirX = 0;
   dirY = -1;
 
@@ -19,15 +17,12 @@ export class Player {
   private _fireIntent = false;
   /** Animated sprite sheet for the player character. */
   private sprite: Sprite;
-  /** Seconds remaining on the hit flash overlay. Counts down from 0.3 to 0 after taking damage. */
-  private hitFlashTime = 0;
   /** Latest authoritative position received from the server. Reconciled against in update(). */
   private serverX: number | null = null;
   private serverY: number | null = null;
 
   constructor(x: number, y: number) {
-    this.x = x;
-    this.y = y;
+    super(x, y);
     this.sprite = new Sprite(PLAYER_SPRITE_CONFIG);
   }
 
@@ -36,27 +31,21 @@ export class Player {
     return this._fireIntent;
   }
 
-  takeDamage() {
-    this.hitFlashTime = 0.3;
-  }
-
   /** Advance player state one frame. */
-  update(dt: number, { moveX, moveY, moving, fire }: InputState) {
+  update(dt: number, input: InputState = { moveX: 0, moveY: 0, moving: false, fire: false }) {
+    const { moveX, moveY, moving, fire } = input;
+
     if (this.hitFlashTime > 0) this.hitFlashTime -= dt;
 
     if (moving) {
-      // normalize direction and keep it as the fire direction when the player stops
+      // normalize the input vector and keep it as the aim direction when the player stops moving
       const len = Math.sqrt(moveX * moveX + moveY * moveY);
       this.dirX = moveX / len;
       this.dirY = moveY / len;
       this.sprite.setFacing(
         Math.abs(moveX) >= Math.abs(moveY)
-          ? moveX < 0
-            ? 'left'
-            : 'right'
-          : moveY < 0
-            ? 'up'
-            : 'down'
+          ? moveX < 0 ? 'left' : 'right'
+          : moveY < 0 ? 'up' : 'down'
       );
     }
 
@@ -85,7 +74,7 @@ export class Player {
     this.prevSpaceDown = fire;
   }
 
-  /** Store the latest authoritative state from the server. Reconciled against in update(). */
+  /** Store the latest authoritative position from the server. Reconciled against in update(). */
   setServerState(x: number, y: number) {
     this.serverX = x;
     this.serverY = y;
@@ -117,7 +106,7 @@ export class Player {
   }
 }
 
-/** Draws a heart shape centered at (x, y). Placeholder until sprites load. */
+/** Draws a heart shape centered at (x, y). Placeholder until the sprite loads. */
 function drawHeart(ctx: CanvasRenderingContext2D, x: number, y: number) {
   const r = PLAYER_RADIUS;
   ctx.save();

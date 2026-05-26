@@ -1,14 +1,12 @@
 import { TICK_RATE, PLAYER_RADIUS } from '@browser-arena/shared';
-import { drawHitFlash } from '../fx/hitFlash';
+import { drawHitFlash } from '../../fx/hitFlash';
+import { Player } from './Player';
 
 const SERVER_TICK_S = 1 / TICK_RATE;
 
-export class RemotePlayer {
+/** A remote player entity, interpolated between server ticks. */
+export class RemotePlayer extends Player {
   readonly id: string;
-
-  /** Current interpolated world-space position. */
-  x: number;
-  y: number;
 
   /** Interpolation source position (where we were at the last server update). */
   private fromX: number;
@@ -19,21 +17,13 @@ export class RemotePlayer {
   /** Normalized interpolation progress from 0 (just received update) to 1 (fully arrived). */
   private lerpT = 1;
 
-  /** Seconds remaining on the hit flash overlay. Counts down from 0.3 to 0 after taking damage. */
-  private hitFlashTime = 0;
-
   constructor(id: string, x: number, y: number) {
+    super(x, y);
     this.id = id;
-    this.x = x;
-    this.y = y;
     this.fromX = x;
     this.fromY = y;
     this.toX = x;
     this.toY = y;
-  }
-
-  takeDamage() {
-    this.hitFlashTime = 0.3;
   }
 
   /** Store the latest authoritative state from the server. Applied during the next update(). */
