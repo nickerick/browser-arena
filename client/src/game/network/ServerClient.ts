@@ -7,18 +7,18 @@ import { socket } from '../../api/socket';
 /**
  * Manages all communication between the client and server.
  *
- * Outbound: sends player input and events each frame.
- * Inbound: receives server messages and routes them to the appropriate systems
- * (PlayerSystem for position updates, ProjectileSystem for projectile state, etc).
+ * Outbound: sends player input and fire events each frame.
+ *
+ * Inbound: incoming server messages are held in a queue and applied synchronously
+ * at the top of each game loop tick via flush(), keeping async network traffic
+ * tied to the deterministic game loop rather than landing at arbitrary times.
  */
 export class ServerClient {
   private players: PlayerSystem;
   private projectiles: ProjectileSystem;
   private input: InputHandler;
   private unsubscribe: (() => void) | null = null;
-  
-  /** Incoming server messages waiting to be applied at the top of the next frame. */
-  private queue: ServerMessage[] = [];
+  private messageQueue: ServerMessage[] = [];
 
   constructor(players: PlayerSystem, input: InputHandler, projectiles: ProjectileSystem) {
     this.players = players;
@@ -27,7 +27,7 @@ export class ServerClient {
   }
 
   connect() {
-    this.unsubscribe = socket.on((msg) => this.queue.push(msg));
+    this.unsubscribe = socket.on((msg) => this.messageQueue.push(msg));
   }
 
   destroy() {
@@ -50,8 +50,8 @@ export class ServerClient {
 
   /** Drains the message queue and applys all pending server updates.*/
   flush() {
-    for (const msg of this.queue) this.handle(msg);
-    this.queue = [];
+    for (const msg of this.messageQueue) this.handle(msg);
+    this.messageQueue = [];
   }
 
   private handle(msg: ServerMessage) {
