@@ -54,14 +54,18 @@ export class ServerClient {
 
   private handle(msg: ServerMessage) {
     const myId = socket.playerId ?? '';
-    if (msg.type === 'state_update') {
-      this.players.applyServerUpdate(msg.players, myId);
-      this.projectiles.applyServerUpdate(msg.projectiles, myId);
-    } else if (msg.type === 'init') {
-      this.players.reset();
-    } else if (msg.type === 'player_hit') {
-      this.projectiles.removeHit(msg.projectileId, msg.shooterId, myId);
-      this.players.takeDamage(msg.targetId, myId);
+    switch (msg.type) {
+      case 'state_update':
+        this.players.applyServerUpdate(msg.players, myId);
+        this.projectiles.applyServerUpdate(msg.projectiles, myId);
+        break;
+      case 'init':
+        this.players.reset();
+        break;
+      case 'player_hit':
+        this.projectiles.removeHit(msg.projectileId, msg.shooterId, myId);
+        this.players.takeDamage(msg.targetId, myId);
+        break;
     }
   }
 }
