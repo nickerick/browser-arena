@@ -20,7 +20,8 @@ const MOVE_SPEED = PLAYER_SPEED * DT;
 
 interface ConnectedPlayer extends PlayerState {
   socket: WebSocket;
-  keys: string[];
+  moveX: number;
+  moveY: number;
 }
 
 interface ServerProjectile {
@@ -48,7 +49,8 @@ export class GameRoom {
       x: Math.random() * (WORLD_W - PLAYER_RADIUS * 4) + PLAYER_RADIUS * 2,
       y: Math.random() * (WORLD_H - PLAYER_RADIUS * 4) + PLAYER_RADIUS * 2,
       socket,
-      keys: [],
+      moveX: 0,
+      moveY: 0,
     });
     this.sendTo(socket, { type: 'init', id });
     return id;
@@ -57,10 +59,14 @@ export class GameRoom {
   handleMessage(playerId: string, msg: ClientMessage) {
     const player = this.players.get(playerId);
     if (!player) return;
-    if (msg.type === 'input') {
-      player.keys = msg.keys;
-    } else if (msg.type === 'fire') {
-      this.spawnProjectile(playerId, msg.dirX, msg.dirY);
+    switch (msg.type) {
+      case 'input':
+        player.moveX = msg.moveX;
+        player.moveY = msg.moveY;
+        break;
+      case 'fire':
+        this.spawnProjectile(playerId, msg.dirX, msg.dirY);
+        break;
     }
   }
 
@@ -173,13 +179,14 @@ export class GameRoom {
 
   private processInputs() {
     for (const player of this.players.values()) {
-      if (player.keys.includes('w')) player.y -= MOVE_SPEED;
-      if (player.keys.includes('s')) player.y += MOVE_SPEED;
-      if (player.keys.includes('a')) player.x -= MOVE_SPEED;
-      if (player.keys.includes('d')) player.x += MOVE_SPEED;
+      let { moveX, moveY } = player;
 
-      player.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, player.x));
-      player.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, player.y));
+      // normalize so diagonal movement isn't faster than cardinal
+      const len = Math.sqrt(moveX * moveX + moveY * moveY);
+      if (len > 0) { moveX /= len; moveY /= len; }
+
+      player.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, player.x + moveX * MOVE_SPEED));
+      player.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, player.y + moveY * MOVE_SPEED));
     }
   }
 

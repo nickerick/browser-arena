@@ -30,5 +30,5 @@ export type ServerMessage =
 
 /** Messages clients send to the server over the WebSocket. */
 export type ClientMessage =
-  | { type: 'input'; keys: string[] }
+  | { type: 'input'; moveX: number; moveY: number }
   | { type: 'fire'; dirX: number; dirY: number };

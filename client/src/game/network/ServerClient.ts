@@ -34,12 +34,7 @@ export class ServerClient {
   }
 
   sendInput({ moveX, moveY }: InputState) {
-    const keys: string[] = [];
-    if (moveY < 0) keys.push('w');
-    if (moveY > 0) keys.push('s');
-    if (moveX < 0) keys.push('a');
-    if (moveX > 0) keys.push('d');
-    socket.send({ type: 'input', keys });
+    socket.send({ type: 'input', moveX, moveY });
   }
 
   sendFire(dirX: number, dirY: number) {
