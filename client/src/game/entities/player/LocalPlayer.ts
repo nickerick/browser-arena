@@ -1,5 +1,6 @@
 import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED } from '@browser-arena/shared';
 import { drawHitFlash } from '../../fx/hitFlash';
+import { drawHeart } from '../../fx/drawHeart';
 import { Sprite } from '../../sprites/Sprite';
 import { PLAYER_SPRITE_CONFIG } from '../../sprites/player';
 import type { InputState } from '../../InputHandler';
@@ -107,20 +108,4 @@ export class LocalPlayer extends Player {
     ctx.textAlign = 'center';
     ctx.fillText('you', this.x, this.y - this.sprite.halfH - 6);
   }
-}
-
-/** Draws a heart shape centered at (x, y). Placeholder until the sprite loads. */
-function drawHeart(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  const r = PLAYER_RADIUS;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.beginPath();
-  ctx.moveTo(0, r * 0.35);
-  ctx.bezierCurveTo(r * 0.5, r * 0.1, r, -r * 0.35, r * 0.5, -r * 0.65);
-  ctx.bezierCurveTo(r * 0.2, -r * 0.9, 0, -r * 0.7, 0, -r * 0.35);
-  ctx.bezierCurveTo(0, -r * 0.7, -r * 0.2, -r * 0.9, -r * 0.5, -r * 0.65);
-  ctx.bezierCurveTo(-r, -r * 0.35, -r * 0.5, r * 0.1, 0, r * 0.35);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
 }
