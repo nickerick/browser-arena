@@ -13,10 +13,13 @@ export class LocalPlayer extends Player {
 
   /** Whether the fire key was held on the previous frame, used to detect the leading edge of a press. */
   private prevSpaceDown = false;
+  
   /** Set to true for exactly one frame when the fire key is first pressed. Read via the fireIntent getter. */
   private _fireIntent = false;
+
   /** Animated sprite sheet for the player character. */
   private sprite: Sprite;
+
   /** Latest authoritative position received from the server. Reconciled against in update(). */
   private serverX: number | null = null;
   private serverY: number | null = null;

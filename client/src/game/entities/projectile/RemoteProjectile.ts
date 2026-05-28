@@ -8,9 +8,11 @@ export class RemoteProjectile extends Projectile {
   /** Interpolation source position (where we were at the last server update). */
   private fromX: number;
   private fromY: number;
+
   /** Interpolation target position (where the server says we should be). */
   private toX: number;
   private toY: number;
+  
   /** Normalized interpolation progress from 0 (just received update) to 1 (fully arrived). */
   private lerpT = 1;
 

@@ -1,8 +1,8 @@
 import { PROJECTILE_RADIUS, WORLD_W, WORLD_H } from '@browser-arena/shared';
-import type { IEntity } from '../IEntity';
+import type { Entity } from '../Entity';
 
 /** Abstract base class for all projectile entities. Owns shared physics and the draw contract. */
-export abstract class Projectile implements IEntity {
+export abstract class Projectile implements Entity {
   x: number;
   y: number;
   protected vx: number;

@@ -1,9 +1,12 @@
-import type { IEntity } from '../IEntity';
+import type { Entity } from '../Entity';
 
 /** Abstract base class for all player entities. Owns shared state and the takeDamage contract. */
-export abstract class Player implements IEntity {
+export abstract class Player implements Entity {
+  /** World-space position. */
   x: number;
   y: number;
+  
+  /** Seconds remaining on the hit flash overlay. Counts down from 0.3 to 0 after taking damage. */
   protected hitFlashTime = 0;
 
   constructor(x: number, y: number) {
