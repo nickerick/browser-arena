@@ -58,10 +58,22 @@ export class ProjectileSystem {
       p.x += p.vx * DT;
       p.y += p.vy * DT;
 
-      if (p.x - PROJECTILE_RADIUS < 0) { p.x = PROJECTILE_RADIUS; p.vx = Math.abs(p.vx); }
-      if (p.x + PROJECTILE_RADIUS > WORLD_W) { p.x = WORLD_W - PROJECTILE_RADIUS; p.vx = -Math.abs(p.vx); }
-      if (p.y - PROJECTILE_RADIUS < 0) { p.y = PROJECTILE_RADIUS; p.vy = Math.abs(p.vy); }
-      if (p.y + PROJECTILE_RADIUS > WORLD_H) { p.y = WORLD_H - PROJECTILE_RADIUS; p.vy = -Math.abs(p.vy); }
+      if (p.x - PROJECTILE_RADIUS < 0) {
+        p.x = PROJECTILE_RADIUS;
+        p.vx = Math.abs(p.vx);
+      }
+      if (p.x + PROJECTILE_RADIUS > WORLD_W) {
+        p.x = WORLD_W - PROJECTILE_RADIUS;
+        p.vx = -Math.abs(p.vx);
+      }
+      if (p.y - PROJECTILE_RADIUS < 0) {
+        p.y = PROJECTILE_RADIUS;
+        p.vy = Math.abs(p.vy);
+      }
+      if (p.y + PROJECTILE_RADIUS > WORLD_H) {
+        p.y = WORLD_H - PROJECTILE_RADIUS;
+        p.vy = -Math.abs(p.vy);
+      }
 
       if (p.age >= PROJECTILE_LIFETIME) {
         this.projectiles.delete(id);
@@ -84,7 +96,12 @@ export class ProjectileSystem {
   /** Current projectile positions for inclusion in the state_update broadcast. */
   get snapshot() {
     return [...this.projectiles.values()].map(({ id, x, y, vx, vy, ownerId }) => ({
-      id, x, y, vx, vy, ownerId,
+      id,
+      x,
+      y,
+      vx,
+      vy,
+      ownerId,
     }));
   }
 }

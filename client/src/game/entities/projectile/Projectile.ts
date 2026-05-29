@@ -22,10 +22,22 @@ export abstract class Projectile implements Entity {
     this.x += this.vx * dt;
     this.y += this.vy * dt;
 
-    if (this.x - PROJECTILE_RADIUS < 0) { this.x = PROJECTILE_RADIUS; this.vx = Math.abs(this.vx); }
-    if (this.x + PROJECTILE_RADIUS > WORLD_W) { this.x = WORLD_W - PROJECTILE_RADIUS; this.vx = -Math.abs(this.vx); }
-    if (this.y - PROJECTILE_RADIUS < 0) { this.y = PROJECTILE_RADIUS; this.vy = Math.abs(this.vy); }
-    if (this.y + PROJECTILE_RADIUS > WORLD_H) { this.y = WORLD_H - PROJECTILE_RADIUS; this.vy = -Math.abs(this.vy); }
+    if (this.x - PROJECTILE_RADIUS < 0) {
+      this.x = PROJECTILE_RADIUS;
+      this.vx = Math.abs(this.vx);
+    }
+    if (this.x + PROJECTILE_RADIUS > WORLD_W) {
+      this.x = WORLD_W - PROJECTILE_RADIUS;
+      this.vx = -Math.abs(this.vx);
+    }
+    if (this.y - PROJECTILE_RADIUS < 0) {
+      this.y = PROJECTILE_RADIUS;
+      this.vy = Math.abs(this.vy);
+    }
+    if (this.y + PROJECTILE_RADIUS > WORLD_H) {
+      this.y = WORLD_H - PROJECTILE_RADIUS;
+      this.vy = -Math.abs(this.vy);
+    }
   }
 
   abstract update(dt: number): void;

@@ -59,10 +59,19 @@ export class PlayerSystem {
 
       // normalize so diagonal movement isn't faster than cardinal
       const len = Math.sqrt(moveX * moveX + moveY * moveY);
-      if (len > 0) { moveX /= len; moveY /= len; }
+      if (len > 0) {
+        moveX /= len;
+        moveY /= len;
+      }
 
-      player.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, player.x + moveX * MOVE_SPEED));
-      player.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, player.y + moveY * MOVE_SPEED));
+      player.x = Math.max(
+        PLAYER_RADIUS,
+        Math.min(WORLD_W - PLAYER_RADIUS, player.x + moveX * MOVE_SPEED)
+      );
+      player.y = Math.max(
+        PLAYER_RADIUS,
+        Math.min(WORLD_H - PLAYER_RADIUS, player.y + moveY * MOVE_SPEED)
+      );
     }
   }
 }

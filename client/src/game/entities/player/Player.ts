@@ -5,7 +5,7 @@ export abstract class Player implements Entity {
   /** World-space position. */
   x: number;
   y: number;
-  
+
   /** Seconds remaining on the hit flash overlay. Counts down from 0.3 to 0 after taking damage. */
   protected hitFlashTime = 0;
 

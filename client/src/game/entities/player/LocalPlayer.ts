@@ -14,7 +14,7 @@ export class LocalPlayer extends Player {
 
   /** Whether the fire key was held on the previous frame, used to detect the leading edge of a press. */
   private prevSpaceDown = false;
-  
+
   /** Set to true for exactly one frame when the fire key is first pressed. Read via the fireIntent getter. */
   private _fireIntent = false;
 
@@ -48,8 +48,12 @@ export class LocalPlayer extends Player {
       this.dirY = moveY / len;
       this.sprite.setFacing(
         Math.abs(moveX) >= Math.abs(moveY)
-          ? moveX < 0 ? 'left' : 'right'
-          : moveY < 0 ? 'up' : 'down'
+          ? moveX < 0
+            ? 'left'
+            : 'right'
+          : moveY < 0
+            ? 'up'
+            : 'down'
       );
     }
 
