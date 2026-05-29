@@ -1,14 +1,13 @@
 import { TICK_RATE, PLAYER_RADIUS } from '@browser-arena/shared';
-import { drawHitFlash } from '../fx/hitFlash';
+import { drawHitFlash } from '../../fx/hitFlash';
+import { drawHeart } from '../../fx/drawHeart';
+import { Player } from './Player';
 
 const SERVER_TICK_S = 1 / TICK_RATE;
 
-export class RemotePlayer {
+/** A remote player entity, interpolated between server ticks. */
+export class RemotePlayer extends Player {
   readonly id: string;
-
-  /** Current interpolated world-space position. */
-  x: number;
-  y: number;
 
   /** Interpolation source position (where we were at the last server update). */
   private fromX: number;
@@ -19,29 +18,21 @@ export class RemotePlayer {
   /** Normalized interpolation progress from 0 (just received update) to 1 (fully arrived). */
   private lerpT = 1;
 
-  /** Seconds remaining on the hit flash overlay. Counts down from 0.3 to 0 after taking damage. */
-  private hitFlashTime = 0;
-
   constructor(id: string, x: number, y: number) {
+    super(x, y);
     this.id = id;
-    this.x = x;
-    this.y = y;
     this.fromX = x;
     this.fromY = y;
     this.toX = x;
     this.toY = y;
   }
 
-  takeDamage() {
-    this.hitFlashTime = 0.3;
-  }
-
-  /** Called when the server sends a new authoritative position for this player. */
-  moveTo(toX: number, toY: number) {
+  /** Store the latest authoritative state from the server. Applied during the next update(). */
+  setServerState(x: number, y: number) {
     this.fromX = this.x;
     this.fromY = this.y;
-    this.toX = toX;
-    this.toY = toY;
+    this.toX = x;
+    this.toY = y;
     this.lerpT = 0;
   }
 
@@ -63,20 +54,4 @@ export class RemotePlayer {
     ctx.textAlign = 'center';
     ctx.fillText('Babbi', this.x, this.y - PLAYER_RADIUS - 6);
   }
-}
-
-/** Draws a heart shape centered at (x, y). Placeholder until remote sprites are implemented. */
-function drawHeart(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  const r = PLAYER_RADIUS;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.beginPath();
-  ctx.moveTo(0, r * 0.35);
-  ctx.bezierCurveTo(r * 0.5, r * 0.1, r, -r * 0.35, r * 0.5, -r * 0.65);
-  ctx.bezierCurveTo(r * 0.2, -r * 0.9, 0, -r * 0.7, 0, -r * 0.35);
-  ctx.bezierCurveTo(0, -r * 0.7, -r * 0.2, -r * 0.9, -r * 0.5, -r * 0.65);
-  ctx.bezierCurveTo(-r, -r * 0.35, -r * 0.5, r * 0.1, 0, r * 0.35);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
 }
