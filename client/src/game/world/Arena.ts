@@ -5,5 +5,9 @@ export class Arena {
   draw(ctx: CanvasRenderingContext2D) {
     ctx.fillStyle = '#0f0f1a';
     ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(0, 0, WORLD_W, WORLD_H);
   }
 }
