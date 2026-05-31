@@ -1,8 +1,7 @@
 import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED, MAX_HP } from '@browser-arena/shared';
 import { drawHitFlash } from '../../fx/hitFlash';
-import { drawHeart, drawHpBar } from '../../fx/drawHeart';
-import { Sprite } from '../../sprites/Sprite';
-import { PLAYER_SPRITE_CONFIG } from '../../sprites/player';
+import { drawHpBar } from '../../fx/drawHeart';
+import { drawEgg } from './egg';
 import type { InputState } from '../../InputHandler';
 import { Player } from './Player';
 
@@ -18,8 +17,8 @@ export class LocalPlayer extends Player {
   /** Set to true for exactly one frame when the fire key is first pressed. Read via the fireIntent getter. */
   private _fireIntent = false;
 
-  /** Animated sprite sheet for the player character. */
-  private sprite: Sprite;
+  /** Walk cycle phase in radians, drives foot animation. */
+  private walkPhase = 0;
 
   /** Latest authoritative position received from the server. Reconciled against in update(). */
   private serverX: number | null = null;
@@ -27,7 +26,6 @@ export class LocalPlayer extends Player {
 
   constructor(x: number, y: number) {
     super(x, y);
-    this.sprite = new Sprite(PLAYER_SPRITE_CONFIG);
   }
 
   /** True for exactly one frame when the fire key is first pressed. */
@@ -42,28 +40,16 @@ export class LocalPlayer extends Player {
     if (this.hitFlashTime > 0) this.hitFlashTime -= dt;
 
     if (moving) {
-      // normalize the input vector and keep it as the aim direction when the player stops moving
       const len = Math.sqrt(moveX * moveX + moveY * moveY);
       this.dirX = moveX / len;
       this.dirY = moveY / len;
-      this.sprite.setFacing(
-        Math.abs(moveX) >= Math.abs(moveY)
-          ? moveX < 0
-            ? 'left'
-            : 'right'
-          : moveY < 0
-            ? 'up'
-            : 'down'
-      );
+      this.walkPhase += dt * 8;
     }
-
-    this.sprite.update(dt, moving);
 
     const speed = PLAYER_SPEED * dt;
     this.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, this.x + moveX * speed));
     this.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, this.y + moveY * speed));
 
-    // reconcile toward the latest server position if we have one
     if (this.serverX !== null && this.serverY !== null) {
       const dx = this.serverX - this.x;
       const dy = this.serverY - this.y;
@@ -77,7 +63,6 @@ export class LocalPlayer extends Player {
       }
     }
 
-    // leading-edge detection — true only on the frame the key is first pressed
     this._fireIntent = fire && !this.prevSpaceDown;
     this.prevSpaceDown = fire;
   }
@@ -103,16 +88,13 @@ export class LocalPlayer extends Player {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    const drawn = this.sprite.draw(ctx, this.x, this.y);
-    if (!drawn) {
-      ctx.fillStyle = '#4ecca3';
-      drawHeart(ctx, this.x, this.y);
-    }
+    const aimAngle = Math.atan2(this.dirY, this.dirX);
+    drawEgg(ctx, this.x, this.y, aimAngle, this.walkPhase, '#4ecca3');
     drawHitFlash(ctx, this.x, this.y, PLAYER_RADIUS, this.hitFlashTime / 0.3);
+    drawHpBar(ctx, this.x, this.y - PLAYER_RADIUS * 1.4 - 14, this.hp, MAX_HP);
     ctx.fillStyle = '#fff';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('you', this.x, this.y - this.sprite.halfH - 6);
-    drawHpBar(ctx, this.x, this.y - this.sprite.halfH - 24, this.hp, MAX_HP);
+    ctx.fillText('you', this.x, this.y - PLAYER_RADIUS * 1.4);
   }
 }
