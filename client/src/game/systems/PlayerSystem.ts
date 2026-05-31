@@ -26,15 +26,15 @@ export class PlayerSystem {
   }
 
   /** Route incoming server state to each player entity. */
-  applyServerUpdate(players: { id: string; x: number; y: number }[], myId: string) {
+  applyServerUpdate(players: { id: string; x: number; y: number; hp: number }[], myId: string) {
     const me = players.find((p) => p.id === myId);
-    if (me) this.local.setServerState(me.x, me.y);
+    if (me) this.local.setServerState(me.x, me.y, me.hp);
 
     for (const p of players) {
       if (p.id === myId) continue;
       const existing = this.remote.get(p.id);
       if (existing) {
-        existing.setServerState(p.x, p.y);
+        existing.setServerState(p.x, p.y, p.hp);
       } else {
         this.remote.set(p.id, new RemotePlayer(p.id, p.x, p.y));
       }

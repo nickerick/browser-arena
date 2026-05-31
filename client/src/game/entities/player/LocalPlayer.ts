@@ -1,6 +1,6 @@
-import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED } from '@browser-arena/shared';
+import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED, MAX_HP } from '@browser-arena/shared';
 import { drawHitFlash } from '../../fx/hitFlash';
-import { drawHeart } from '../../fx/drawHeart';
+import { drawHeart, drawHpBar } from '../../fx/drawHeart';
 import { Sprite } from '../../sprites/Sprite';
 import { PLAYER_SPRITE_CONFIG } from '../../sprites/player';
 import type { InputState } from '../../InputHandler';
@@ -82,16 +82,18 @@ export class LocalPlayer extends Player {
     this.prevSpaceDown = fire;
   }
 
-  /** Store the latest authoritative position from the server. Reconciled against in update(). */
-  setServerState(x: number, y: number) {
+  /** Store the latest authoritative state from the server. Position is reconciled in update(); HP is applied directly. */
+  setServerState(x: number, y: number, hp: number) {
     this.serverX = x;
     this.serverY = y;
+    this.hp = hp;
   }
 
   /** Resets position and state without recreating the sprite (avoids image reload). */
   reset(x: number, y: number) {
     this.x = x;
     this.y = y;
+    this.hp = MAX_HP;
     this.dirX = 0;
     this.dirY = -1;
     this.prevSpaceDown = false;
@@ -111,5 +113,6 @@ export class LocalPlayer extends Player {
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('you', this.x, this.y - this.sprite.halfH - 6);
+    drawHpBar(ctx, this.x, this.y - this.sprite.halfH - 24, this.hp, MAX_HP);
   }
 }

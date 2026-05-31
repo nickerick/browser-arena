@@ -53,11 +53,16 @@ export class GameRoom {
     const hits = this.projectiles.tick(this.players.all);
     for (const hit of hits) {
       this.broadcast({ type: 'player_hit', ...hit });
+      const died = this.players.applyDamage(hit.targetId);
+      if (died) {
+        this.broadcast({ type: 'player_died', playerId: hit.targetId, killerId: hit.shooterId });
+        this.players.respawn(hit.targetId);
+      }
     }
 
     this.broadcast({
       type: 'state_update',
-      players: this.players.all.map(({ id, x, y }) => ({ id, x, y })),
+      players: this.players.all.map(({ id, x, y, hp }) => ({ id, x, y, hp })),
       projectiles: this.projectiles.snapshot,
     });
   }
