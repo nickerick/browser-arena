@@ -55,6 +55,8 @@ export class ProjectileSystem {
 
     for (const [id, p] of this.projectiles) {
       p.age += DT;
+      const prevX = p.x;
+      const prevY = p.y;
       p.x += p.vx * DT;
       p.y += p.vy * DT;
 
@@ -82,7 +84,7 @@ export class ProjectileSystem {
 
       for (const player of players) {
         if (player.id === p.ownerId) continue;
-        if (testHit(p.x, p.y, player.x, player.y)) {
+        if (testHit(prevX, prevY, p.x, p.y, player.x, player.y)) {
           this.projectiles.delete(id);
           hits.push({ targetId: player.id, shooterId: p.ownerId, projectileId: id });
           break;

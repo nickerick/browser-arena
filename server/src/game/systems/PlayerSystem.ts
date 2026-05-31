@@ -1,5 +1,12 @@
 import { WebSocket } from 'ws';
-import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED, TICK_RATE, MAX_HP } from '@browser-arena/shared';
+import {
+  WORLD_W,
+  WORLD_H,
+  PLAYER_RADIUS,
+  PLAYER_SPEED,
+  TICK_RATE,
+  MAX_HP,
+} from '@browser-arena/shared';
 
 const MOVE_SPEED = PLAYER_SPEED * (1 / TICK_RATE);
 

@@ -1,6 +1,7 @@
 import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED, MAX_HP } from '@browser-arena/shared';
 import { drawHitFlash } from '../../fx/hitFlash';
 import { drawHeart, drawHpBar } from '../../fx/drawHeart';
+import { drawBarrel } from '../../fx/drawBarrel';
 import { Sprite } from '../../sprites/Sprite';
 import { PLAYER_SPRITE_CONFIG } from '../../sprites/player';
 import type { InputState } from '../../InputHandler';
@@ -36,16 +37,31 @@ export class LocalPlayer extends Player {
   }
 
   /** Advance player state one frame. */
-  update(dt: number, input: InputState = { moveX: 0, moveY: 0, moving: false, fire: false }) {
-    const { moveX, moveY, moving, fire } = input;
+  update(
+    dt: number,
+    input: InputState = {
+      moveX: 0,
+      moveY: 0,
+      moving: false,
+      fire: false,
+      worldMouseX: 0,
+      worldMouseY: 0,
+    }
+  ) {
+    const { moveX, moveY, moving, fire, worldMouseX, worldMouseY } = input;
+
+    // update aim direction from mouse position in world space
+    const aimDx = worldMouseX - this.x;
+    const aimDy = worldMouseY - this.y;
+    const aimLen = Math.sqrt(aimDx * aimDx + aimDy * aimDy);
+    if (aimLen > 0) {
+      this.dirX = aimDx / aimLen;
+      this.dirY = aimDy / aimLen;
+    }
 
     if (this.hitFlashTime > 0) this.hitFlashTime -= dt;
 
     if (moving) {
-      // normalize the input vector and keep it as the aim direction when the player stops moving
-      const len = Math.sqrt(moveX * moveX + moveY * moveY);
-      this.dirX = moveX / len;
-      this.dirY = moveY / len;
       this.sprite.setFacing(
         Math.abs(moveX) >= Math.abs(moveY)
           ? moveX < 0
@@ -72,8 +88,8 @@ export class LocalPlayer extends Player {
         this.x = this.serverX;
         this.y = this.serverY;
       } else if (dist > 4 && moving) {
-        this.x += dx * 0.2;
-        this.y += dy * 0.2;
+        this.x += dx * 0.05;
+        this.y += dy * 0.05;
       }
     }
 
@@ -103,6 +119,7 @@ export class LocalPlayer extends Player {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
+    drawBarrel(ctx, this.x, this.y, this.dirX, this.dirY);
     const drawn = this.sprite.draw(ctx, this.x, this.y);
     if (!drawn) {
       ctx.fillStyle = '#4ecca3';
