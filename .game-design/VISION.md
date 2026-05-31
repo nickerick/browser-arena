@@ -109,6 +109,42 @@ Melee players don't need mouse aim — pure WASD + dash to close distance. This 
 
 ---
 
+## Game Modes
+
+**MVP: FFA (Free For All).** All core systems — XP, zone, respawn, loadout — are designed around FFA first.
+
+Future modes: 2v2v2v2, 4v4, and other team configs are planned but out of scope for MVP.
+
+**Dev note:** keep player identity decoupled from team identity from day one. A `player.teamId` that's `null` in FFA means adding teams later is purely additive — no rewrite needed.
+
+---
+
+## Map Design
+
+*To be decided — key questions:*
+- Hand-crafted maps or procedurally generated?
+- Single map or a rotation?
+- Does the zone always shrink toward center, or toward a random point?
+
+---
+
+## Lobby & Match Flow
+
+*To be decided — key questions:*
+- How does a match start? Host presses start, or auto-countdown when enough players join?
+- After a winner: auto-restart after a delay, or return to lobby?
+
+---
+
+## Loadout Timing
+
+*To be decided — key question:*
+- Do you pick up weapons from the map and swap freely mid-match?
+- Or do you commit to a weapon type and XP upgrades it over time?
+- Or a hybrid — you have a base weapon but can pick up temporary powerup weapons?
+
+---
+
 ## Design Principles
 
 - **No one spectates for more than 30 seconds.** Respawn fast or die trying.
