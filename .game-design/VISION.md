@@ -67,13 +67,27 @@ Early game you might only have a weapon. A fully upgraded player has all 3 slots
 
 ---
 
+## Perspective
+
+**Top-down (bird's eye)** — committed. Current movement, collision, and shooting are all already top-down. Switching to a platformer would mean rebuilding gravity, jump physics, and the entire map format.
+
+Rocketbot's high-ground depth is replaced by **map design**:
+- **Chokepoints** — doorways and corridors worth controlling
+- **Cover** — pillars and walls to peek around
+- **Zone value** — center of map is high-risk/high-reward (more XP orbs), edges are safer but weaker position
+- **Line of sight** — snipers need clear lanes, melee needs to close distance through cover
+
+This gives real positioning depth without gravity. Think Hotline Miami / Enter the Gungeon more than Rocketbot.
+
+---
+
 ## Movement
 
 The goal is movement that's easy to pick up but has real skill expression — not diep.io's bland WASD, but approachable for new players unlike full rocketbot momentum.
 
 ### The System
 
-- **WASD**: slow base movement. Positioning matters because you can't just run away.
+- **WASD**: slow base movement, no momentum/glide — snappy stop when you release keys. Positioning matters because you can't just run away.
 - **Mouse**: aims for ranged weapons. Shoot button is flexible — could be click, could be a key depending on weapon type.
 - **Dash** (shift or dedicated key): short cooldown burst in your movement direction. The primary skill expression — use it to escape, reposition, or slam someone into a wall.
 
