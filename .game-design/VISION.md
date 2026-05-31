@@ -121,27 +121,28 @@ Future modes: 2v2v2v2, 4v4, and other team configs are planned but out of scope 
 
 ## Map Design
 
-*To be decided — key questions:*
-- Hand-crafted maps or procedurally generated?
-- Single map or a rotation?
-- Does the zone always shrink toward center, or toward a random point?
+**Hand-crafted maps.** One map for MVP, small rotation added later. Procedural generation makes it too hard to guarantee good chokepoints and cover balance.
+
+Zone always shrinks **toward center** — predictable and fair, everyone knows where the endgame happens.
 
 ---
 
 ## Lobby & Match Flow
 
-*To be decided — key questions:*
-- How does a match start? Host presses start, or auto-countdown when enough players join?
-- After a winner: auto-restart after a delay, or return to lobby?
+- **Match start**: host presses start. Playing with coworkers means you know when everyone's ready.
+- **Post-match**: return to lobby, host restarts. Natural pause to talk before the next game.
 
 ---
 
 ## Loadout Timing
 
-*To be decided — key question:*
-- Do you pick up weapons from the map and swap freely mid-match?
-- Or do you commit to a weapon type and XP upgrades it over time?
-- Or a hybrid — you have a base weapon but can pick up temporary powerup weapons?
+**Hybrid model:**
+
+- **Base weapon** chosen at lobby (or very start of match) — this is your class identity for the round. "I'm the sniper this game."
+- **XP upgrades your base weapon** over time — faster reload, more damage, etc. Progression feels personal.
+- **Weapon pickups on the map are temporary** — grab a rocket launcher, use it for ~15 seconds, then back to your base weapon. Adds chaos and map interaction without undermining build identity.
+
+Freely swapping weapons from pickups would mean no one has identity — everyone just runs whatever they grab. This model keeps identity, progression, and map excitement all at once.
 
 ---
 
