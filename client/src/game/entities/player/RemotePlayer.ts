@@ -1,6 +1,6 @@
-import { TICK_RATE, PLAYER_RADIUS } from '@browser-arena/shared';
+import { TICK_RATE, PLAYER_RADIUS, MAX_HP } from '@browser-arena/shared';
 import { drawHitFlash } from '../../fx/hitFlash';
-import { drawHeart } from '../../fx/drawHeart';
+import { drawHeart, drawHpBar } from '../../fx/drawHeart';
 import { Player } from './Player';
 
 const SERVER_TICK_S = 1 / TICK_RATE;
@@ -28,12 +28,13 @@ export class RemotePlayer extends Player {
   }
 
   /** Store the latest authoritative state from the server. Applied during the next update(). */
-  setServerState(x: number, y: number) {
+  setServerState(x: number, y: number, hp: number) {
     this.fromX = this.x;
     this.fromY = this.y;
     this.toX = x;
     this.toY = y;
     this.lerpT = 0;
+    this.hp = hp;
   }
 
   /** Advance interpolation and timers one frame. */
@@ -53,5 +54,6 @@ export class RemotePlayer extends Player {
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('Babbi', this.x, this.y - PLAYER_RADIUS - 6);
+    drawHpBar(ctx, this.x, this.y - PLAYER_RADIUS - 24, this.hp, MAX_HP);
   }
 }

@@ -61,6 +61,9 @@ export class ServerClient {
         this.projectiles.removeHit(msg.projectileId, msg.shooterId, myId);
         this.players.takeDamage(msg.targetId, myId);
         break;
+      case 'player_died':
+        // hp and position are corrected by the next state_update; nothing extra needed
+        break;
     }
   }
 }

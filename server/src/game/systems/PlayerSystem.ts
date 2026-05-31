@@ -1,5 +1,5 @@
 import { WebSocket } from 'ws';
-import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED, TICK_RATE } from '@browser-arena/shared';
+import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED, TICK_RATE, MAX_HP } from '@browser-arena/shared';
 
 const MOVE_SPEED = PLAYER_SPEED * (1 / TICK_RATE);
 
@@ -7,6 +7,7 @@ export interface ConnectedPlayer {
   id: string;
   x: number;
   y: number;
+  hp: number;
   socket: WebSocket;
   moveX: number;
   moveY: number;
@@ -32,6 +33,7 @@ export class PlayerSystem {
       id,
       x: Math.random() * (WORLD_W - PLAYER_RADIUS * 4) + PLAYER_RADIUS * 2,
       y: Math.random() * (WORLD_H - PLAYER_RADIUS * 4) + PLAYER_RADIUS * 2,
+      hp: MAX_HP,
       socket,
       moveX: 0,
       moveY: 0,
@@ -42,6 +44,23 @@ export class PlayerSystem {
 
   remove(id: string) {
     this.players.delete(id);
+  }
+
+  /** Decrements the player's HP by 1. Returns true if the player just died. */
+  applyDamage(id: string): boolean {
+    const player = this.players.get(id);
+    if (!player) return false;
+    player.hp = Math.max(0, player.hp - 1);
+    return player.hp === 0;
+  }
+
+  /** Reset a player's HP and teleport them to a random spawn position. */
+  respawn(id: string) {
+    const player = this.players.get(id);
+    if (!player) return;
+    player.hp = MAX_HP;
+    player.x = Math.random() * (WORLD_W - PLAYER_RADIUS * 4) + PLAYER_RADIUS * 2;
+    player.y = Math.random() * (WORLD_H - PLAYER_RADIUS * 4) + PLAYER_RADIUS * 2;
   }
 
   /** Store the latest input vector for a player. Applied during the next processInputs(). */
