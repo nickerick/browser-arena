@@ -26,47 +26,6 @@ The key insight: diep.io's endless progression creates great moment-to-moment ga
 
 ---
 
-## Match Structure
-
-Target session length: **6-8 minutes** for 5-8 players.
-
-| Phase | Time | Zone Size | Respawn? |
-|-------|------|-----------|----------|
-| **Early** | 0-2 min | Full map | Yes — keep loadout, lose 40% unspent XP |
-| **Mid** | 2-4 min | ~60% | Yes — keep loadout, lose 20% unspent XP |
-| **Endgame** | 4-6 min | Shrinking to 0 | No — final fight |
-
-When respawns close, there should be a clear visual/audio signal so everyone knows the stakes just changed.
-
-Dead players during respawn window: spectate briefly, drop back in on the zone edge within ~10 seconds.
-
-### Why the Respawn Penalty Flips
-
-Early deaths lose *more* unspent XP because you haven't made decisions yet — death stings but isn't catastrophic. By mid-game you've probably spent most of your XP on your build anyway, so the penalty is lower. Your *loadout* (decisions made) is always preserved on respawn.
-
----
-
-## Progression System
-
-XP comes from:
-- Killing players
-- Collecting orbs scattered on the map
-- Killed players drop their unspent XP as orbs
-
-XP is spent on **loadout slots**. You start with just a weapon slot. Spending unlocks more slots.
-
-### Loadout Slots (3 total)
-
-| Slot | Examples |
-|------|---------|
-| **Weapon** | Shotgun, sniper, rapid fire, rocket launcher, melee |
-| **Passive** | HP regen, speed boost, larger XP pickup radius, armor |
-| **Special** | Dash, shield bubble, turret drop, mine |
-
-Early game you might only have a weapon. A fully upgraded player has all 3 slots filled — and made real choices about what goes in them.
-
----
-
 ## Characters & Skins
 
 **Default character: an egg.** Simple, original, charming. Easy for a beginner artist — top-down egg is just an oval with eyes and little feet.
@@ -79,7 +38,7 @@ Early game you might only have a weapon. A fully upgraded player has all 3 slots
 ### Skins
 Skins swap the body sprite entirely — anything goes. The barrel always renders on top so weapons are readable regardless of how wild the skin is. Examples: spotted egg, golden egg, dinosaur egg, chicken, rubber duck, guitar, McDonald's bag, a coworker's face. No rules.
 
-### Art notes
+### Art Notes
 - Full top-down only (not pokemon 3/4 view) — one sprite per skin, one animation cycle, no multiple angle art needed
 - Barrel is a shared asset across all skins — you draw it once
 - Walk animation is intentionally simple and funny — little egg feet shuffling is the charm
@@ -96,45 +55,68 @@ Rocketbot's high-ground depth is replaced by **map design**:
 - **Zone value** — center of map is high-risk/high-reward (more XP orbs), edges are safer but weaker position
 - **Line of sight** — snipers need clear lanes, melee needs to close distance through cover
 
-This gives real positioning depth without gravity. Think Hotline Miami / Enter the Gungeon more than Rocketbot.
+Think Hotline Miami / Enter the Gungeon more than Rocketbot.
 
 ---
 
 ## Movement
 
-The goal is movement that's easy to pick up but has real skill expression — not diep.io's bland WASD, but approachable for new players unlike full rocketbot momentum.
+Easy to pick up but with real skill expression — not diep.io's bland WASD, but approachable unlike full rocketbot momentum.
 
-### The System
+- **WASD**: slow base movement, no momentum/glide — snappy stop when you release keys
+- **Mouse**: aims for ranged weapons. Shoot input is flexible depending on weapon type
+- **Dash** (shift or dedicated key): short cooldown burst in your movement direction — use it to escape, reposition, or slam someone into a wall
 
-- **WASD**: slow base movement, no momentum/glide — snappy stop when you release keys. Positioning matters because you can't just run away.
-- **Mouse**: aims for ranged weapons. Shoot button is flexible — could be click, could be a key depending on weapon type.
-- **Dash** (shift or dedicated key): short cooldown burst in your movement direction. The primary skill expression — use it to escape, reposition, or slam someone into a wall.
+Walled maps make dash a real decision. Good players use walls to redirect; bad players get trapped by them. Dash is the **default special ability** — swappable for shield bubble, mine, etc. as part of the loadout.
 
-### Why Walls Make This Work
-
-diep.io feels aimless partly because the map is infinite. Walled maps with corners change everything:
-- Momentum and dash direction become real decisions
-- Players can be pinned, cornered, or outmaneuvered
-- Good players use walls to redirect; bad players get trapped by them
-
-Dash is the **default special ability** — players can swap it for shield bubble, mine, etc. as part of their loadout. This means movement depth scales with progression too.
-
-### Melee as a Weapon Class
-
-Melee players don't need mouse aim — pure WASD + dash to close distance. This creates a natural rock-paper-scissors:
+### Melee Class
+Melee players don't need mouse aim — pure WASD + dash to close distance.
 - Melee **counters** snipers (forces close range)
-- Melee **loses to** shotguns and rockets (punished at close range)
-- Melee players almost certainly run dash in their special slot — a meaningful tradeoff that's baked into the class fantasy
+- Melee **loses to** shotguns and rockets (punished up close)
+- Dash is near-mandatory for melee — a meaningful tradeoff baked into the class
 
 ---
 
-## Game Modes
+## Match Structure
 
-**MVP: FFA (Free For All).** All core systems — XP, zone, respawn, loadout — are designed around FFA first.
+Target session length: **6-8 minutes** for 5-8 players.
 
-Future modes: 2v2v2v2, 4v4, and other team configs are planned but out of scope for MVP.
+| Phase | Time | Zone Size | Respawn? |
+|-------|------|-----------|----------|
+| **Early** | 0-2 min | Full map | Yes — keep loadout, lose 40% unspent XP |
+| **Mid** | 2-4 min | ~60% | Yes — keep loadout, lose 20% unspent XP |
+| **Endgame** | 4-6 min | Shrinking to 0 | No — final fight |
 
-**Dev note:** keep player identity decoupled from team identity from day one. A `player.teamId` that's `null` in FFA means adding teams later is purely additive — no rewrite needed.
+When respawns close, a clear visual/audio signal fires so everyone knows the stakes just changed. Dead players during respawn window: spectate briefly, drop back in on the zone edge within ~10 seconds.
+
+### Why the Respawn Penalty Flips
+Early deaths lose *more* unspent XP because you haven't made decisions yet. By mid-game you've probably spent most of your XP on your build anyway. Your *loadout* (decisions made) is always preserved on respawn.
+
+---
+
+## Progression System
+
+XP comes from:
+- Killing players
+- Collecting orbs scattered on the map
+- Killed players drop their unspent XP as orbs
+
+XP unlocks **loadout slots**. You start with just a weapon slot. Spending XP unlocks passive and special slots.
+
+### Loadout Slots (3 total)
+
+| Slot | Examples |
+|------|---------|
+| **Weapon** | Shotgun, sniper, rapid fire, rocket launcher, melee |
+| **Passive** | HP regen, speed boost, larger XP pickup radius, armor |
+| **Special** | Dash, shield bubble, turret drop, mine |
+
+### Loadout Timing
+- **Base weapon** chosen at lobby — class identity for the round ("I'm the sniper this game")
+- **XP upgrades your base weapon** over time — faster reload, more damage, etc.
+- **Weapon pickups on the map are temporary** — grab a rocket launcher for ~15 seconds, then back to your base weapon
+
+Freely swapping weapons would mean no one has identity. This model keeps identity, progression, and map excitement all at once.
 
 ---
 
@@ -148,20 +130,18 @@ Zone always shrinks **toward center** — predictable and fair, everyone knows w
 
 ## Lobby & Match Flow
 
-- **Match start**: host presses start. Playing with coworkers means you know when everyone's ready.
-- **Post-match**: return to lobby, host restarts. Natural pause to talk before the next game.
+- **Match start**: host presses start — playing with coworkers means you know when everyone's ready
+- **Post-match**: return to lobby, host restarts — natural pause to talk before the next game
 
 ---
 
-## Loadout Timing
+## Game Modes
 
-**Hybrid model:**
+**MVP: FFA (Free For All).** All core systems are designed around FFA first.
 
-- **Base weapon** chosen at lobby (or very start of match) — this is your class identity for the round. "I'm the sniper this game."
-- **XP upgrades your base weapon** over time — faster reload, more damage, etc. Progression feels personal.
-- **Weapon pickups on the map are temporary** — grab a rocket launcher, use it for ~15 seconds, then back to your base weapon. Adds chaos and map interaction without undermining build identity.
+Future modes: 2v2v2v2, 4v4, and other team configs are planned but out of scope for MVP.
 
-Freely swapping weapons from pickups would mean no one has identity — everyone just runs whatever they grab. This model keeps identity, progression, and map excitement all at once.
+**Dev note:** keep player identity decoupled from team identity from day one. A `player.teamId` of `null` in FFA means adding teams later is purely additive — no rewrite needed.
 
 ---
 
@@ -177,16 +157,14 @@ Freely swapping weapons from pickups would mean no one has identity — everyone
 
 ## Implementation Roadmap
 
-Suggested build order:
-
-1. **Mouse aiming** — decouple aim from move direction, click to shoot
+1. **Mouse aiming** — decouple aim from move direction
 2. **Dash system** — cooldown burst, server-authoritative, plugs into special slot later
-3. **Match lifecycle** — lobby → active (early/mid/endgame phases) → winner screen
-2. **Zone system** — shrinking safe area, damage outside, phase transitions
-3. **XP + loadout** — orb spawning, kill drops, upgrade UI, slot system
-4. **Respawn rules** — phase-aware respawn logic, spectate mode, drop-in on zone edge
-5. **Weapon variety** — at least 3-4 distinct weapon types with different feel
-6. **Passives + specials** — the build-identity layer
+3. **Match lifecycle** — lobby → early/mid/endgame phases → winner screen
+4. **Zone system** — shrinking safe area, damage outside, phase transitions
+5. **XP + loadout** — orb spawning, kill drops, upgrade UI, slot system
+6. **Respawn rules** — phase-aware logic, spectate mode, drop-in on zone edge
+7. **Weapon variety** — at least 3-4 distinct weapon types with different feel
+8. **Passives + specials** — the build-identity layer
 
 ---
 
@@ -196,8 +174,8 @@ Suggested build order:
 - [x] Projectile shooting
 - [x] HP system
 - [x] Kill tracking + respawn skeleton
-- [ ] Mouse aiming + click to shoot
-- [ ] Dash ability (cooldown burst)
+- [ ] Mouse aiming
+- [ ] Dash ability
 - [ ] Match lifecycle (lobby / phases / end)
 - [ ] Zone / shrinking map
 - [ ] XP system
