@@ -1,3 +1,4 @@
+import { WORLD_W, WORLD_H } from '@browser-arena/shared';
 import { InputHandler, type InputState } from './InputHandler';
 import { Camera } from './world/Camera';
 import { PlayerSystem } from './systems/PlayerSystem';
@@ -65,7 +66,6 @@ export class Game {
     // update state
     const input = this.readInput();
     this.players.update(dt, input);
-    this.camera.follow(this.players.local.x, this.players.local.y, dt); // follow after updating player position
     if (this.players.local.fireIntent) {
       this.projectiles.fire(
         this.players.local.x,
@@ -76,9 +76,15 @@ export class Game {
       this.server.sendFire(this.players.local.dirX, this.players.local.dirY);
     }
     this.projectiles.update(dt);
-
+    
     // flush input to server
     this.server.sendInput(input);
+
+    // update camera — spectator zooms out to world center, normal follows the player
+    const targetX = this.spectator ? WORLD_W / 2 : this.players.local.x;
+    const targetY = this.spectator ? WORLD_H / 2 : this.players.local.y;
+    this.camera.zoom = this.spectator ? this.camera.zoomToFit : 1;
+    this.camera.follow(targetX, targetY, dt);
 
     this.render();
     this.rafHandle = requestAnimationFrame((t) => this.loop(t));
@@ -88,16 +94,21 @@ export class Game {
    * Read-only draw step — takes a snapshot of current game state and paints a frame.
    */
   private render() {
-    const { ctx, canvas } = this;
+    this.clearScreen();
+    
+    // shift + scale the canvas so world coordinates map correctly to the screen
+    this.camera.apply(this.ctx);
+    this.arena.draw(this.ctx);
+    this.players.draw(this.ctx);
+    this.projectiles.draw(this.ctx);
+    
+    // undo the camera transform — anything drawn after here is fixed to the screen (HUD, etc.)
+    this.camera.restore(this.ctx);
+  }
 
-    // clear the canvas in screen space before applying the camera transform
-    ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
-
-    this.camera.apply(ctx);
-    this.arena.draw(ctx);
-    this.players.draw(ctx);
-    this.projectiles.draw(ctx);
-    this.camera.restore(ctx);
+  /** Clears the entire canvas in screen space before each frame. */
+  private clearScreen() {
+    this.ctx.clearRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight);
   }
 
   /** Combines raw input with camera-converted mouse coords into a full InputState. */
@@ -107,10 +118,12 @@ export class Game {
     return { ...raw, worldMouseX, worldMouseY };
   }
 
+  private spectator = false;
+
   private onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Tab') {
       e.preventDefault();
-      this.camera.spectator = !this.camera.spectator;
+      this.spectator = !this.spectator;
     }
   };
 
