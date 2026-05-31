@@ -67,6 +67,25 @@ Early game you might only have a weapon. A fully upgraded player has all 3 slots
 
 ---
 
+## Characters & Skins
+
+**Default character: an egg.** Simple, original, charming. Easy for a beginner artist — top-down egg is just an oval with eyes and little feet.
+
+### Anatomy
+- **Body** — the egg sprite, this is what skins replace
+- **Feet** — tiny legs poking out the bottom, 2-3 frame walk cycle (shuffling feet + slight body bob)
+- **Barrel** — rotates around the body pointing toward mouse cursor, determines class readability
+
+### Skins
+Skins swap the body sprite entirely — anything goes. The barrel always renders on top so weapons are readable regardless of how wild the skin is. Examples: spotted egg, golden egg, dinosaur egg, chicken, rubber duck, guitar, McDonald's bag, a coworker's face. No rules.
+
+### Art notes
+- Full top-down only (not pokemon 3/4 view) — one sprite per skin, one animation cycle, no multiple angle art needed
+- Barrel is a shared asset across all skins — you draw it once
+- Walk animation is intentionally simple and funny — little egg feet shuffling is the charm
+
+---
+
 ## Perspective
 
 **Top-down (bird's eye)** — committed. Current movement, collision, and shooting are all already top-down. Switching to a platformer would mean rebuilding gravity, jump physics, and the entire map format.
