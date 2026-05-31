@@ -1,27 +1,21 @@
-import { TICK_RATE, PLAYER_RADIUS } from '@browser-arena/shared';
-import { drawHitFlash } from '../fx/hitFlash';
+import { TICK_RATE, PLAYER_RADIUS, MAX_HP } from '@browser-arena/shared';
+import { drawHitFlash } from '../../fx/hitFlash';
+import { drawHpBar } from '../../fx/drawHeart';
 import { drawEgg } from './egg';
+import { Player } from './Player';
 
 const SERVER_TICK_S = 1 / TICK_RATE;
 
-export class RemotePlayer {
+/** A remote player entity, interpolated between server ticks. */
+export class RemotePlayer extends Player {
   readonly id: string;
 
-  /** Current interpolated world-space position. */
-  x: number;
-  y: number;
-
-  /** Interpolation source position (where we were at the last server update). */
   private fromX: number;
   private fromY: number;
-  /** Interpolation target position (where the server says we should be). */
   private toX: number;
   private toY: number;
-  /** Normalized interpolation progress from 0 (just received update) to 1 (fully arrived). */
   private lerpT = 1;
 
-  /** Seconds remaining on the hit flash overlay. Counts down from 0.3 to 0 after taking damage. */
-  private hitFlashTime = 0;
   /** Walk cycle phase in radians, drives foot animation. */
   private walkPhase = 0;
   /** Last movement direction, used to orient the barrel. */
@@ -29,26 +23,22 @@ export class RemotePlayer {
   private dirY = -1;
 
   constructor(id: string, x: number, y: number) {
+    super(x, y);
     this.id = id;
-    this.x = x;
-    this.y = y;
     this.fromX = x;
     this.fromY = y;
     this.toX = x;
     this.toY = y;
   }
 
-  takeDamage() {
-    this.hitFlashTime = 0.3;
-  }
-
-  /** Called when the server sends a new authoritative position for this player. */
-  moveTo(toX: number, toY: number) {
+  /** Store the latest authoritative state from the server. Applied during the next update(). */
+  setServerState(x: number, y: number, hp: number) {
     this.fromX = this.x;
     this.fromY = this.y;
-    this.toX = toX;
-    this.toY = toY;
+    this.toX = x;
+    this.toY = y;
     this.lerpT = 0;
+    this.hp = hp;
   }
 
   /** Advance interpolation and timers one frame. */
@@ -76,6 +66,7 @@ export class RemotePlayer {
     const aimAngle = Math.atan2(this.dirY, this.dirX);
     drawEgg(ctx, this.x, this.y, aimAngle, this.walkPhase, '#ff69b4');
     drawHitFlash(ctx, this.x, this.y, PLAYER_RADIUS, this.hitFlashTime / 0.3);
+    drawHpBar(ctx, this.x, this.y - PLAYER_RADIUS * 1.4 - 14, this.hp, MAX_HP);
     ctx.fillStyle = '#fff';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';

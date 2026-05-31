@@ -1,17 +1,17 @@
 import { WORLD_W, WORLD_H } from '@browser-arena/shared';
-import { Player } from '../entities/Player';
-import { RemotePlayer } from '../entities/RemotePlayer';
+import { LocalPlayer } from '../entities/player/LocalPlayer';
+import { RemotePlayer } from '../entities/player/RemotePlayer';
 import type { InputState } from '../InputHandler';
 
 /** Manages local and remote player state. */
 export class PlayerSystem {
   /** The local player controlled by this client. */
-  readonly local: Player;
+  readonly local: LocalPlayer;
   /** All other connected players, keyed by player ID. */
   readonly remote = new Map<string, RemotePlayer>();
 
   constructor() {
-    this.local = new Player(WORLD_W / 2, WORLD_H / 2);
+    this.local = new LocalPlayer(WORLD_W / 2, WORLD_H / 2);
   }
 
   /** Advance all player state one frame. */
@@ -25,20 +25,16 @@ export class PlayerSystem {
     for (const remote of this.remote.values()) remote.draw(ctx, remote.id);
   }
 
-  /** Apply a server state update — reconcile local player and sync remote players. */
-  applyServerUpdate(
-    players: { id: string; x: number; y: number }[],
-    myId: string,
-    isMoving: boolean
-  ) {
+  /** Route incoming server state to each player entity. */
+  applyServerUpdate(players: { id: string; x: number; y: number; hp: number }[], myId: string) {
     const me = players.find((p) => p.id === myId);
-    if (me) this.local.reconcile(me.x, me.y, isMoving);
+    if (me) this.local.setServerState(me.x, me.y, me.hp);
 
     for (const p of players) {
       if (p.id === myId) continue;
       const existing = this.remote.get(p.id);
       if (existing) {
-        existing.moveTo(p.x, p.y);
+        existing.setServerState(p.x, p.y, p.hp);
       } else {
         this.remote.set(p.id, new RemotePlayer(p.id, p.x, p.y));
       }

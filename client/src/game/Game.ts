@@ -27,7 +27,7 @@ export class Game {
     this.arena = new Arena();
     this.players = new PlayerSystem();
     this.projectiles = new ProjectileSystem();
-    this.server = new ServerClient(this.players, this.input, this.projectiles);
+    this.server = new ServerClient(this.players, this.projectiles);
     this.server.connect();
 
     const dpr = window.devicePixelRatio || 1;
@@ -49,6 +49,9 @@ export class Game {
     // calculate delta time from the browser-provided timestamp
     const dt = this.prevFrameTimestamp !== null ? (timestamp - this.prevFrameTimestamp) / 1000 : 0;
     this.prevFrameTimestamp = timestamp;
+
+    // apply all server messages that arrived since last frame
+    this.server.flush();
 
     // update state
     const input = this.input.read();

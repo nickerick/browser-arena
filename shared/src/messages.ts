@@ -10,6 +10,7 @@ export interface PlayerState {
   id: string;
   x: number;
   y: number;
+  hp: number;
 }
 
 /** Position, velocity, and identity of an in-flight projectile. */
@@ -26,9 +27,10 @@ export interface ProjectileState {
 export type ServerMessage =
   | { type: 'init'; id: string }
   | { type: 'state_update'; players: PlayerState[]; projectiles: ProjectileState[] }
-  | { type: 'player_hit'; targetId: string; shooterId: string; projectileId: string };
+  | { type: 'player_hit'; targetId: string; shooterId: string; projectileId: string }
+  | { type: 'player_died'; playerId: string; killerId: string };
 
 /** Messages clients send to the server over the WebSocket. */
 export type ClientMessage =
-  | { type: 'input'; keys: string[] }
+  | { type: 'input'; moveX: number; moveY: number }
   | { type: 'fire'; dirX: number; dirY: number };

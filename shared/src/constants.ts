@@ -22,6 +22,9 @@ export const PROJECTILE_SPEED = 550;
 /** Time in seconds before a projectile is removed from the world. */
 export const PROJECTILE_LIFETIME = 2.5;
 
+/** Maximum HP a player starts with and respawns to. */
+export const MAX_HP = 3;
+
 /** Shape used for projectile-vs-player hit detection. */
 export const HITBOX_SHAPE: 'circle' | 'aabb' = 'circle';
 

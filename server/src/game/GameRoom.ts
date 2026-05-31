@@ -1,198 +1,79 @@
 import { WebSocket } from 'ws';
-import {
-  PlayerState,
-  ProjectileState,
-  ServerMessage,
-  ClientMessage,
-  WORLD_W,
-  WORLD_H,
-  PLAYER_RADIUS,
-  PLAYER_SPEED,
-  TICK_RATE,
-  PROJECTILE_SPEED,
-  PROJECTILE_RADIUS,
-  PROJECTILE_LIFETIME,
-  testHit,
-} from '@browser-arena/shared';
+import type { ClientMessage, ServerMessage } from '@browser-arena/shared';
+import { TICK_RATE } from '@browser-arena/shared';
+import { PlayerSystem } from './systems/PlayerSystem';
+import { ProjectileSystem } from './systems/ProjectileSystem';
+import { CollisionSystem } from './systems/CollisionSystem';
 
-const DT = 1 / TICK_RATE;
-const MOVE_SPEED = PLAYER_SPEED * DT;
-
-interface ConnectedPlayer extends PlayerState {
-  socket: WebSocket;
-  keys: string[];
-}
-
-interface ServerProjectile {
-  id: string;
-  ownerId: string;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  age: number;
-}
-
+/**
+ * Owns the game tick loop and orchestrates all systems.
+ * Handles player connections and routes incoming client messages.
+ */
 export class GameRoom {
-  private players = new Map<string, ConnectedPlayer>();
-  private projectiles = new Map<string, ServerProjectile>();
+  private players = new PlayerSystem();
+  private projectiles = new ProjectileSystem();
+  private collisions = new CollisionSystem();
 
   constructor() {
     setInterval(() => this.tick(), 1000 / TICK_RATE);
   }
 
+  /** Register a new player over the given socket and return their assigned ID. */
   addPlayer(socket: WebSocket): string {
-    const id = crypto.randomUUID();
-    this.players.set(id, {
-      id,
-      x: Math.random() * (WORLD_W - PLAYER_RADIUS * 4) + PLAYER_RADIUS * 2,
-      y: Math.random() * (WORLD_H - PLAYER_RADIUS * 4) + PLAYER_RADIUS * 2,
-      socket,
-      keys: [],
-    });
-    this.sendTo(socket, { type: 'init', id });
-    return id;
+    return this.players.add(socket);
   }
 
+  /** Deregister a player when their connection closes. */
+  removePlayer(id: string) {
+    this.players.remove(id);
+  }
+
+  /** Route an incoming client message to the appropriate system. */
   handleMessage(playerId: string, msg: ClientMessage) {
-    const player = this.players.get(playerId);
-    if (!player) return;
-    if (msg.type === 'input') {
-      player.keys = msg.keys;
-    } else if (msg.type === 'fire') {
-      this.spawnProjectile(playerId, msg.dirX, msg.dirY);
+    switch (msg.type) {
+      case 'input':
+        this.players.setInput(playerId, msg.moveX, msg.moveY);
+        break;
+      case 'fire': {
+        const player = this.players.get(playerId);
+        if (player) this.projectiles.spawn(playerId, player.x, player.y, msg.dirX, msg.dirY);
+        break;
+      }
     }
   }
 
-  removePlayer(id: string) {
-    this.players.delete(id);
-  }
-
-  private spawnProjectile(ownerId: string, dirX: number, dirY: number) {
-    const owner = this.players.get(ownerId);
-    if (!owner) return;
-    const id = crypto.randomUUID();
-    this.projectiles.set(id, {
-      id,
-      ownerId,
-      x: owner.x,
-      y: owner.y,
-      vx: dirX * PROJECTILE_SPEED,
-      vy: dirY * PROJECTILE_SPEED,
-      age: 0,
-    });
-  }
-
+  /**
+   * Core server update step, called once per tick by setInterval.
+   * Advances all simulation, resolves hits, then broadcasts the new state to all clients.
+   */
   private tick() {
-    this.processInputs();
-    this.resolveCollisions();
-    this.tickProjectiles();
+    this.players.processInputs();
+    this.collisions.resolve(this.players.all);
+
+    const hits = this.projectiles.tick(this.players.all);
+    for (const hit of hits) {
+      this.broadcast({ type: 'player_hit', ...hit });
+      const died = this.players.applyDamage(hit.targetId);
+      if (died) {
+        this.broadcast({ type: 'player_died', playerId: hit.targetId, killerId: hit.shooterId });
+        this.players.respawn(hit.targetId);
+      }
+    }
+
     this.broadcast({
       type: 'state_update',
-      players: [...this.players.values()].map(({ id, x, y }) => ({ id, x, y })),
-      projectiles: [...this.projectiles.values()].map(({ id, x, y, vx, vy, ownerId }) => ({
-        id,
-        x,
-        y,
-        vx,
-        vy,
-        ownerId,
-      })),
+      players: this.players.all.map(({ id, x, y, hp }) => ({ id, x, y, hp })),
+      projectiles: this.projectiles.snapshot,
     });
   }
 
-  private tickProjectiles() {
-    for (const [id, p] of this.projectiles) {
-      p.age += DT;
-      p.x += p.vx * DT;
-      p.y += p.vy * DT;
-
-      if (p.x - PROJECTILE_RADIUS < 0) {
-        p.x = PROJECTILE_RADIUS;
-        p.vx = Math.abs(p.vx);
-      }
-      if (p.x + PROJECTILE_RADIUS > WORLD_W) {
-        p.x = WORLD_W - PROJECTILE_RADIUS;
-        p.vx = -Math.abs(p.vx);
-      }
-      if (p.y - PROJECTILE_RADIUS < 0) {
-        p.y = PROJECTILE_RADIUS;
-        p.vy = Math.abs(p.vy);
-      }
-      if (p.y + PROJECTILE_RADIUS > WORLD_H) {
-        p.y = WORLD_H - PROJECTILE_RADIUS;
-        p.vy = -Math.abs(p.vy);
-      }
-
-      if (p.age >= PROJECTILE_LIFETIME) {
-        this.projectiles.delete(id);
-        continue;
-      }
-
-      for (const [playerId, player] of this.players) {
-        if (playerId === p.ownerId) continue;
-        if (testHit(p.x, p.y, player.x, player.y)) {
-          this.projectiles.delete(id);
-          this.broadcast({
-            type: 'player_hit',
-            targetId: playerId,
-            shooterId: p.ownerId,
-            projectileId: id,
-          });
-          break;
-        }
-      }
-    }
-  }
-
-  private resolveCollisions() {
-    const players = [...this.players.values()];
-    const minDist = PLAYER_RADIUS * 2;
-    for (let i = 0; i < players.length; i++) {
-      for (let j = i + 1; j < players.length; j++) {
-        const a = players[i];
-        const b = players[j];
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist === 0 || dist >= minDist) continue;
-        const overlap = (minDist - dist) / 2;
-        const nx = dx / dist;
-        const ny = dy / dist;
-        a.x -= nx * overlap;
-        a.y -= ny * overlap;
-        b.x += nx * overlap;
-        b.y += ny * overlap;
-        a.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, a.x));
-        a.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, a.y));
-        b.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, b.x));
-        b.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, b.y));
-      }
-    }
-  }
-
-  private processInputs() {
-    for (const player of this.players.values()) {
-      if (player.keys.includes('w')) player.y -= MOVE_SPEED;
-      if (player.keys.includes('s')) player.y += MOVE_SPEED;
-      if (player.keys.includes('a')) player.x -= MOVE_SPEED;
-      if (player.keys.includes('d')) player.x += MOVE_SPEED;
-
-      player.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, player.x));
-      player.y = Math.max(PLAYER_RADIUS, Math.min(WORLD_H - PLAYER_RADIUS, player.y));
-    }
-  }
-
+  /** Serialize a message once and deliver it to every connected player. */
   private broadcast(msg: ServerMessage) {
     const payload = JSON.stringify(msg);
-    for (const player of this.players.values()) {
+    for (const player of this.players.all) {
       if (player.socket.readyState === WebSocket.OPEN) {
         player.socket.send(payload);
       }
     }
-  }
-
-  private sendTo(socket: WebSocket, msg: ServerMessage) {
-    socket.send(JSON.stringify(msg));
   }
 }
