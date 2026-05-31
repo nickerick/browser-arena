@@ -22,7 +22,7 @@ export class PlayerSystem {
 
   draw(ctx: CanvasRenderingContext2D) {
     this.local.draw(ctx);
-    for (const remote of this.remote.values()) remote.draw(ctx);
+    for (const remote of this.remote.values()) remote.draw(ctx, remote.id);
   }
 
   /** Apply a server state update — reconcile local player and sync remote players. */

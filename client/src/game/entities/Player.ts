@@ -1,7 +1,6 @@
 import { WORLD_W, WORLD_H, PLAYER_RADIUS, PLAYER_SPEED } from '@browser-arena/shared';
 import { drawHitFlash } from '../fx/hitFlash';
-import { Sprite } from '../sprites/Sprite';
-import { PLAYER_SPRITE_CONFIG } from '../sprites/player';
+import { drawEgg } from './egg';
 import type { InputState } from '../InputHandler';
 
 export class Player {
@@ -17,15 +16,14 @@ export class Player {
   private prevSpaceDown = false;
   /** Set to true for exactly one frame when the fire key is first pressed. Read via the fireIntent getter. */
   private _fireIntent = false;
-  /** Animated sprite sheet for the player character. */
-  private sprite: Sprite;
   /** Seconds remaining on the hit flash overlay. Counts down from 0.3 to 0 after taking damage. */
   private hitFlashTime = 0;
+  /** Walk cycle phase in radians, drives foot animation. */
+  private walkPhase = 0;
 
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
-    this.sprite = new Sprite(PLAYER_SPRITE_CONFIG);
   }
 
   /** True for exactly one frame when the fire key is first pressed. */
@@ -46,18 +44,8 @@ export class Player {
       const len = Math.sqrt(moveX * moveX + moveY * moveY);
       this.dirX = moveX / len;
       this.dirY = moveY / len;
-      this.sprite.setFacing(
-        Math.abs(moveX) >= Math.abs(moveY)
-          ? moveX < 0
-            ? 'left'
-            : 'right'
-          : moveY < 0
-            ? 'up'
-            : 'down'
-      );
+      this.walkPhase += dt * 8;
     }
-
-    this.sprite.update(dt, moving);
 
     const speed = PLAYER_SPEED * dt;
     this.x = Math.max(PLAYER_RADIUS, Math.min(WORLD_W - PLAYER_RADIUS, this.x + moveX * speed));
@@ -97,31 +85,12 @@ export class Player {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    const drawn = this.sprite.draw(ctx, this.x, this.y);
-    if (!drawn) {
-      ctx.fillStyle = '#4ecca3';
-      drawHeart(ctx, this.x, this.y);
-    }
+    const aimAngle = Math.atan2(this.dirY, this.dirX);
+    drawEgg(ctx, this.x, this.y, aimAngle, this.walkPhase, '#4ecca3');
     drawHitFlash(ctx, this.x, this.y, PLAYER_RADIUS, this.hitFlashTime / 0.3);
     ctx.fillStyle = '#fff';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('you', this.x, this.y - this.sprite.halfH - 6);
+    ctx.fillText('you', this.x, this.y - PLAYER_RADIUS * 1.4);
   }
-}
-
-/** Draws a heart shape centered at (x, y). Placeholder until sprites load. */
-function drawHeart(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  const r = PLAYER_RADIUS;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.beginPath();
-  ctx.moveTo(0, r * 0.35);
-  ctx.bezierCurveTo(r * 0.5, r * 0.1, r, -r * 0.35, r * 0.5, -r * 0.65);
-  ctx.bezierCurveTo(r * 0.2, -r * 0.9, 0, -r * 0.7, 0, -r * 0.35);
-  ctx.bezierCurveTo(0, -r * 0.7, -r * 0.2, -r * 0.9, -r * 0.5, -r * 0.65);
-  ctx.bezierCurveTo(-r, -r * 0.35, -r * 0.5, r * 0.1, 0, r * 0.35);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
 }
