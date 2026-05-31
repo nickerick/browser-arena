@@ -22,7 +22,7 @@ export function GameCanvas() {
   return (
     <canvas
       ref={canvasRef}
-      style={{ display: 'block', width: '100%', height: '70vh', outline: '2px solid red' }}
+      style={{ display: 'block', width: '100%', height: '70vh' }}
     />
   );
 }

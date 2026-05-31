@@ -108,7 +108,8 @@ export class Game {
 
   /** Clears the entire canvas in screen space before each frame. */
   private clearScreen() {
-    this.ctx.clearRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight);
+    this.ctx.fillStyle = '##1a1a2e';
+    this.ctx.fillRect(0, 0, this.canvas.clientWidth, this.canvas.clientHeight);
   }
 
   /** Combines raw input with camera-converted mouse coords into a full InputState. */
