@@ -67,6 +67,27 @@ Early game you might only have a weapon. A fully upgraded player has all 3 slots
 
 ---
 
+## Movement
+
+The goal is movement that's easy to pick up but has real skill expression — not diep.io's bland WASD, but approachable for new players unlike full rocketbot momentum.
+
+### The System
+
+- **WASD**: slow base movement. Positioning matters because you can't just run away.
+- **Mouse**: always aims. Click to shoot.
+- **Dash** (shift or dedicated key): short cooldown burst in your movement direction. The primary skill expression — use it to escape, reposition, or slam someone into a wall.
+
+### Why Walls Make This Work
+
+diep.io feels aimless partly because the map is infinite. Walled maps with corners change everything:
+- Momentum and dash direction become real decisions
+- Players can be pinned, cornered, or outmaneuvered
+- Good players use walls to redirect; bad players get trapped by them
+
+Dash is the **default special ability** — players can swap it for shield bubble, mine, etc. as part of their loadout. This means movement depth scales with progression too.
+
+---
+
 ## Design Principles
 
 - **No one spectates for more than 30 seconds.** Respawn fast or die trying.
@@ -81,7 +102,9 @@ Early game you might only have a weapon. A fully upgraded player has all 3 slots
 
 Suggested build order:
 
-1. **Match lifecycle** — lobby → active (early/mid/endgame phases) → winner screen
+1. **Mouse aiming** — decouple aim from move direction, click to shoot
+2. **Dash system** — cooldown burst, server-authoritative, plugs into special slot later
+3. **Match lifecycle** — lobby → active (early/mid/endgame phases) → winner screen
 2. **Zone system** — shrinking safe area, damage outside, phase transitions
 3. **XP + loadout** — orb spawning, kill drops, upgrade UI, slot system
 4. **Respawn rules** — phase-aware respawn logic, spectate mode, drop-in on zone edge
@@ -92,10 +115,12 @@ Suggested build order:
 
 ## Current State
 
-- [x] Basic multiplayer movement
+- [x] Basic multiplayer movement (WASD)
 - [x] Projectile shooting
 - [x] HP system
 - [x] Kill tracking + respawn skeleton
+- [ ] Mouse aiming + click to shoot
+- [ ] Dash ability (cooldown burst)
 - [ ] Match lifecycle (lobby / phases / end)
 - [ ] Zone / shrinking map
 - [ ] XP system
