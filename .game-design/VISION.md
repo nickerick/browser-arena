@@ -59,7 +59,7 @@ XP is spent on **loadout slots**. You start with just a weapon slot. Spending un
 
 | Slot | Examples |
 |------|---------|
-| **Weapon** | Shotgun, sniper, rapid fire, rocket launcher |
+| **Weapon** | Shotgun, sniper, rapid fire, rocket launcher, melee |
 | **Passive** | HP regen, speed boost, larger XP pickup radius, armor |
 | **Special** | Dash, shield bubble, turret drop, mine |
 
@@ -74,7 +74,7 @@ The goal is movement that's easy to pick up but has real skill expression — no
 ### The System
 
 - **WASD**: slow base movement. Positioning matters because you can't just run away.
-- **Mouse**: always aims. Click to shoot.
+- **Mouse**: aims for ranged weapons. Shoot button is flexible — could be click, could be a key depending on weapon type.
 - **Dash** (shift or dedicated key): short cooldown burst in your movement direction. The primary skill expression — use it to escape, reposition, or slam someone into a wall.
 
 ### Why Walls Make This Work
@@ -85,6 +85,13 @@ diep.io feels aimless partly because the map is infinite. Walled maps with corne
 - Good players use walls to redirect; bad players get trapped by them
 
 Dash is the **default special ability** — players can swap it for shield bubble, mine, etc. as part of their loadout. This means movement depth scales with progression too.
+
+### Melee as a Weapon Class
+
+Melee players don't need mouse aim — pure WASD + dash to close distance. This creates a natural rock-paper-scissors:
+- Melee **counters** snipers (forces close range)
+- Melee **loses to** shotguns and rockets (punished at close range)
+- Melee players almost certainly run dash in their special slot — a meaningful tradeoff that's baked into the class fantasy
 
 ---
 
