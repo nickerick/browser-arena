@@ -11,8 +11,10 @@ const HIT_RADIUS = PLAYER_RADIUS + PROJECTILE_RADIUS;
  * then checks if that distance is less than the combined hit radius.
  */
 export function testHit(
-  x0: number, y0: number,  // projectile position last tick
-  x1: number, y1: number,  // projectile position this tick
+  x0: number,
+  y0: number, // projectile position last tick
+  x1: number,
+  y1: number, // projectile position this tick
   playerX: number,
   playerY: number
 ): boolean {

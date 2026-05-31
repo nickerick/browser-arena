@@ -76,7 +76,7 @@ export class Game {
       this.server.sendFire(this.players.local.dirX, this.players.local.dirY);
     }
     this.projectiles.update(dt);
-    
+
     // flush input to server
     this.server.sendInput(input);
 
@@ -95,13 +95,13 @@ export class Game {
    */
   private render() {
     this.clearScreen();
-    
+
     // shift + scale the canvas so world coordinates map correctly to the screen
     this.camera.apply(this.ctx);
     this.arena.draw(this.ctx);
     this.players.draw(this.ctx);
     this.projectiles.draw(this.ctx);
-    
+
     // undo the camera transform — anything drawn after here is fixed to the screen (HUD, etc.)
     this.camera.restore(this.ctx);
   }
@@ -114,7 +114,10 @@ export class Game {
   /** Combines raw input with camera-converted mouse coords into a full InputState. */
   private readInput(): InputState {
     const raw = this.input.read();
-    const { x: worldMouseX, y: worldMouseY } = this.camera.toWorld(raw.clientMouseX, raw.clientMouseY);
+    const { x: worldMouseX, y: worldMouseY } = this.camera.toWorld(
+      raw.clientMouseX,
+      raw.clientMouseY
+    );
     return { ...raw, worldMouseX, worldMouseY };
   }
 

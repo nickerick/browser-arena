@@ -39,7 +39,14 @@ export class LocalPlayer extends Player {
   /** Advance player state one frame. */
   update(
     dt: number,
-    input: InputState = { moveX: 0, moveY: 0, moving: false, fire: false, worldMouseX: 0, worldMouseY: 0 }
+    input: InputState = {
+      moveX: 0,
+      moveY: 0,
+      moving: false,
+      fire: false,
+      worldMouseX: 0,
+      worldMouseY: 0,
+    }
   ) {
     const { moveX, moveY, moving, fire, worldMouseX, worldMouseY } = input;
 
